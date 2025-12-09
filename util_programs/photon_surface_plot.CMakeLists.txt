@@ -1,0 +1,33 @@
+cmake_minimum_required(VERSION 3.18)
+
+set (${APPNAME}_SRC_FILES)
+
+get_filename_component(CURRENT_DIR_NAME "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
+
+set (EXECUTABLE_NAME ${CURRENT_DIR_NAME})
+
+message(STATUS "Building ${EXECUTABLE_NAME}")
+
+set(THIS_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+
+file(GLOB SOURCES ${THIS_DIR}/*.f90)
+
+message(DEBUG "Building ${EXECUTABLE_NAME} - SOURCES - ${SOURCES}")
+
+set (${APPNAME}_SRC_FILES
+     ${SOURCES}
+)
+
+add_executable(${EXECUTABLE_NAME} ${${APPNAME}_SRC_FILES})
+
+target_link_libraries(${EXECUTABLE_NAME} PUBLIC bsim cpp_bmad_interface tao bmad sim_utils forest gomp readline ${LIST_OF_EXTERNAL_LIBRARIES} X11)
+
+message(STATUS "PLACING BUILD OF ${EXECUTABLE_NAME} in ${FORT_MOD_FILES}/bin")
+
+enable_language( Fortran )
+
+set_target_properties(${EXECUTABLE_NAME} PROPERTIES
+#    OUTPUT_NAME "IF_NEED_DIFFERENT_NAME"
+    RUNTIME_OUTPUT_DIRECTORY ${FORT_MOD_FILES}/bin
+)
+

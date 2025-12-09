@@ -1,42 +1,54 @@
-cmake_minimum_required(VERSION $ENV{ACC_CMAKE_VERSION})
+cmake_minimum_required(VERSION 3.18)
+
 project(ACC)
 
-set(INC_DIRS 
+set(EXECUTABLE_NAME )
+
+if("${CONDA_BUILD}" STREQUAL "ON")
+    set(INC_DIRS
+        ${CONDA_BUILD_PATH}/include/
+        ${CONDA_BUILD_PATH}/include/xraylib/
+    )
+else()
+    set(INC_DIRS
+    )
+endif()
+
+include_directories(${BMAD_EXTERNAL} ${INC_DIRS})
+
+enable_language( Fortran )
+
+set(PROGRAM_LIST
+    spin_amplitude_dependent_tune
+    ptc_layout_example
+    construct_taylor_map
+    dispersion_simulation
+    lapack_examples ## This is broken with lapack version upgrade.
+    lattice_geometry_example
+    multi_turn_tracking_example
+    beam_track_example
+    bmad_to_opal_example
+    em_field_query_example
+    csr_example
+    particle_track_example
+    simple_bmad_program
+    plot_example
+    ptc_spin_orbital_normal_form
+    spin_matching
 )
 
-set (SRC_DIRS
-)
+#program_list
+# spin_amplitude_dependent_tune ptc_layout_example construct_taylor_map dispersion_simulation lapack_examples lattice_geometry_example multi_turn_tracking_example beam_track_example bmad_to_opal_example em_field_query_example csr_example particle_track_example simple_bmad_program plot_example ptc_spin_orbital_normal_form spin_matching
 
-#OpenMP Flags
-#set (FFLAGS "-openmp")
-#set (LINK_FLAGS "-openmp")
+# Only build mpi_mp if both ENABLE_OPENMP and ENABLE_MPI are set to "ON"
+if("${ENABLE_OPENMP}" STREQUAL "ON" AND "${ENABLE_MPI}" STREQUAL "ON")
+    set(MPI_LIST
+        mpi_mp
+    )
+    list(APPEND PROGRAM_LIST ${MPI_LIST})
+endif()
 
-set (EXE_SPECS 
-  ## cmake_files/cmake.parallel_track_example  ## This causes problems in distribution builds.
-  ## cmake_files/cmake.coarray_example         ## For gfortran need to modify cmake_files/cmake.coarray_example to link in coarray library.
-  cmake_files/cmake.spin_amplitude_dependent_tune
-  cmake_files/cmake.ptc_layout_example
-  cmake_files/cmake.construct_taylor_map
-  cmake_files/cmake.dispersion_simulation
-  cmake_files/cmake.lapack_examples         ## This is broken with lapack version upgrade.
-  cmake_files/cmake.lattice_geometry_example
-  cmake_files/cmake.multi_turn_tracking_example
-  cmake_files/cmake.beam_track_example
-  cmake_files/cmake.bmad_to_opal_example
-  cmake_files/cmake.em_field_query_example
-  cmake_files/cmake.csr_example
-  cmake_files/cmake.particle_track_example
-  cmake_files/cmake.simple_bmad_program
-  cmake_files/cmake.plot_example
-  cmake_files/cmake.ptc_spin_orbital_normal_form
-  cmake_files/cmake.spin_matching
-)
-
-# Only build mpi_mp if both ACC_ENABLE_OPENMP and ACC_ENABLE_MPI are set to "Y".
-
-if ("$ENV{ACC_ENABLE_OPENMP}" AND "$ENV{ACC_ENABLE_MPI}")
-  list (APPEND EXE_SPECS "cmake_files/cmake.mpi_mp")
-endif ()
-
-
-include($ENV{ACC_BUILD_SYSTEM}/Master.cmake)
+foreach(PROG ${PROGRAM_LIST})
+    message(STATUS "Now building ${PROG}")
+    add_subdirectory(${PROG})
+endforeach()

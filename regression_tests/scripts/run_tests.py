@@ -56,7 +56,8 @@ Defaults:
 
 results = open('regression.results', 'w')
 
-bin_dir = '../production/bin/'
+#bin_dir = '../production/bin/'
+bin_dir = '../build/bin/'
 test_dir_list = []
 test_list_file = 'TESTS.LIST'
 time0 = time.time()

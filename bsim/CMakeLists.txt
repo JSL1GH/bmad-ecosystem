@@ -1,57 +1,117 @@
-set (LIBNAME bsim)
-cmake_minimum_required(VERSION $ENV{ACC_CMAKE_VERSION})
+cmake_minimum_required(VERSION 3.18)
+
 project(ACC)
 
-IF ($ENV{ACC_CONDA_BUILD})
-  SET (INC_DIRS
-    $ENV{ACC_CONDA_PATH}/include
-    $ENV{ACC_CONDA_PATH}/include/xraylib/
-  )
-ELSE ()
-  SET (INC_DIRS
-  )
-ENDIF ()
+set(LIBNAME bsim)
 
-set (SRC_DIRS
-  code
-  code_synrad
-  code_synrad3d
-  synrad3d/custom
-  modules
-)
-
-set (EXE_SPECS
-  #cmake_files/cmake.ansga2
-  #cmake_files/cmake.aspea2
-
-  cmake_files/cmake.e_cooling
-  cmake_files/cmake.long_term_tracking
-  cmake_files/cmake.tune_scan
-  cmake_files/cmake.dark_current_tracker
-  cmake_files/cmake.envelope_ibs
-  cmake_files/cmake.frequency_map
-  cmake_files/cmake.bbu
-  cmake_files/cmake.dynamic_aperture
-  cmake_files/cmake.ibs_linac
-  cmake_files/cmake.ibs_ring
-  cmake_files/cmake.sodom2
-  cmake_files/cmake.spin_stroboscope
-  cmake_files/cmake.synrad
-  cmake_files/cmake.synrad3d
-  cmake_files/cmake.synrad_aperture_to_wall
-  cmake_files/cmake.tune_plane_res_plot
-  cmake_files/cmake.wall_generator
-)
-
-#set (FFLAGS "-qopenmp")
-#set (LINK_FLAGS "-qopenmp")
-
-if($ENV{ACC_ENABLE_MPI})
-  list(APPEND EXE_SPECS "cmake_files/cmake.moga")
-  list(APPEND EXE_SPECS "cmake_files/cmake.aperture_by_tracking")
-  list(APPEND EXE_SPECS "cmake_files/cmake.touschek_background")
-  list(APPEND EXE_SPECS "cmake_files/cmake.long_term_tracking_mpi")
-  list(APPEND EXE_SPECS "cmake_files/cmake.tune_scan_mpi")
+if("${CONDA_BUILD}" STREQUAL "ON")
+    set(INC_DIRS
+        ${CONDA_BUILD_PATH}/include/
+        ${CONDA_BUILD_PATH}/include/xraylib/
+    )
+else()
+    set(INC_DIRS
+    )
 endif()
 
-include($ENV{ACC_BUILD_SYSTEM}/Master.cmake)
+include_directories(${BMAD_EXTERNAL} ${INC_DIRS})
+
+enable_language( Fortran )
+
+#clear ${LIBNAME}_SRC_FILES
+set(${LIBNAME}_SRC_FILES)
+
+#clear ${LIBNAME}_SRC_DIRS
+set(${LIBNAME}_SRC_DIRS)
+
+set(${LIBNAME}_SRC_DIRS 
+    code
+    code_synrad
+    code_synrad3d
+    synrad3d/custom
+    modules
+)
+
+message(DEBUG "BUILDING LIST OF SRCS FROM ${LIBNAME} ${BASEDIR} ${SRCDIRS}")
+
+# loop through the directories and add any files that will be built to the ${NEXT_DIR_FILES} variable
+# at the end of discovering all of the files in a directory, we build the ${SRC_FILES} variable
+foreach(DIR ${${LIBNAME}_SRC_DIRS})
+    message(DEBUG "Looking at ${BASEDIR}/${LIBNAME}/${DIR}/*.f90")
+    file( GLOB NEXT_DIR_FILES
+        ${BASEDIR}/${LIBNAME}/${DIR}/*.f90
+        ${BASEDIR}/${LIBNAME}/${DIR}/*.f
+        ${BASEDIR}/${LIBNAME}/${DIR}/*.cc
+        ${BASEDIR}/${LIBNAME}/${DIR}/*.cpp
+        ${BASEDIR}/${LIBNAME}/${DIR}/*.cxx
+        ${BASEDIR}/${LIBNAME}/${DIR}/*.c
+        ${BASEDIR}/${LIBNAME}/${DIR}/*.CC
+    )
+    list(APPEND ${LIBNAME}_SRC_FILES ${NEXT_DIR_FILES})
+endforeach()
+
+message(DEBUG "Value of ${LIBNAME}_SRC_FILES is - ${${LIBNAME}_SRC_FILES}")
+
+message(DEBUG "THIS makes the library - ${LIBNAME} - from the .f90 files - list is ${${LIBNAME}_SRC_FILES}}")
+message(STATUS "1. Working on ${LIBNAME}")
+
+add_library(${LIBNAME} ${${LIBNAME}_SRC_FILES})
+
+target_link_libraries(${LIBNAME} ${DEP_LIBS})
+
+message(DEBUG "This will be the build of ${LIBNAME} directory")
+
+# this is where to find the include and modules files needed for our build of ${LIBNAME}
+target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/include ${CMAKE_BINARY_DIR}/modules)
+
+# this tells the build to place mod files into the ${CMAKE_BINARY_DIR}/modules directory
+set_target_properties(${LIBNAME} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
+
+# this is how the library files get into the /lib and /bin directories
+set_target_properties(${LIBNAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+#necessary for install
+install(TARGETS ${LIBNAME} PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include"
+)
+
+# now build library associated programs
+set(PROGRAM_LIST
+    e_cooling
+    long_term_tracking
+    tune_scan
+    dark_current_tracker
+    envelope_ibs
+    frequency_map
+    bbu
+    dynamic_aperture
+    ibs_linac
+    ibs_ring
+    sodom2
+    spin_stroboscope
+    synrad
+    synrad3d
+    synrad_aperture_to_wall
+    tune_plane_res_plot
+    wall_generator
+)
+
+# PROGRAM_LIST
+# e_cooling long_term_tracking tune_scan dark_current_tracker envelope_ibs frequency_map bbu dynamic_aperture ibs_linac ibs_ring sodom2 spin_stroboscope synrad synrad3d synrad_aperture_to_wall tune_plane_res_plot wall_generator
+
+if("${ENABLE_MPI}" STREQUAL "ON")
+    set(MPI_LIST
+        moga
+        aperture_by_tracking
+        touschek_background
+        long_term_tracking_mpi
+        tune_scan_mpi
+    )
+    list(APPEND PROGRAM_LIST ${MPI_LIST})
+endif()
+# PROGRAM_LIST
+# moga aperture_by_tracking touschek_background long_term_tracking_mpi tune_scan_mpi
+
+foreach(PROG ${PROGRAM_LIST})
+    message(STATUS "Now building ${PROG}")
+    add_subdirectory(${PROG})
+endforeach()
