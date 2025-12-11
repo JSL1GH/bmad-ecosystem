@@ -5,7 +5,8 @@ import pytest
 TESTS_ROOT = pathlib.Path(__file__).resolve().parent
 BMAD_REPO_ROOT = TESTS_ROOT.parent
 DEBUG_BIN_PATH = pathlib.Path("..") / "debug" / "bin"
-PRODUCTION_BIN_PATH = pathlib.Path("..") / "production" / "bin"
+#PRODUCTION_BIN_PATH = pathlib.Path("..") / "production" / "bin"
+PRODUCTION_BIN_PATH = pathlib.Path("..") / "build" / "bin"
 
 BMAD_DOC_ROOT = BMAD_REPO_ROOT / "bmad-doc"
 TAO_EXAMPLES_ROOT = BMAD_DOC_ROOT / "tao_examples"
