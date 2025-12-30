@@ -27,6 +27,7 @@ The default build assumes that bmad system libraries are available - that is typ
 By default, the external bmad repository is placed in ${HOME}/bmad/external
 Therefore, the BMAD_EXTERNAL argument default value is ${HOME}/bmad/external
 
+3) There will be many Warning errors about Nonexistent include directories.  These errors are cmake errors and can safely be ignored.
 
 Additional options:
 

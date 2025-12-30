@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(ACC LANGUAGES CXX Fortran)
+project(BMADPROJ LANGUAGES CXX Fortran)
 
 #determine the place from which cmake is being invoked
 if(NOT DEFINED BASEDIR)
@@ -23,6 +23,7 @@ message(DEBUG "VALUE of build directory is ${CMAKE_BINARY_DIR}")
 
 #for d in hdf5 fftw lapack lapack95 gsl fgsl forest xraylib sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests
 set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests)
+#set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux)# bsim util_programs lux regression_tests)
 
 option(BUILD_SHARED_LIBS "Specify if do not want shared object libraries (prefer static '.a') '-DBUILD_SHARED_LIBS=OFF'" ON)
 if(NOT DEFINED BUILD_SHARED_LIBS)
@@ -77,7 +78,7 @@ endif()
 #e.g. Bmad-ecosystem goes into $ENV{HOME/bmad/internal by default?
 #or do we abort and tell the user we need a value!
 
-if(EXISTS "${CMAKE_INSTALL_PREFIX}")
+if(DEFINED CMAKE_INSTALL_PREFIX)
    
     # IF VALUE IS /usr/local, it means user did not supply a value - CMAKE DEFAULTS TO /usr/local!
     # therefore, we continue as if user supplied a value of $ENV{HOME}/bmad/external
@@ -124,14 +125,20 @@ else()
     message(DEBUG "BMAD_EXTERNAL DOES NOT EXIST AT THIS POINT")
 endif()
 
+set(LIB_POSTFIX ".so")
+if (APPLE)
+    set(LIB_POSTFIX ".dylib")
+endif()
+
 #do we want to use CMAKE_LIBRARY_PATH instead of all this?
 if(DEFINED BMAD_EXTERNAL)
     foreach (LIB 
-        libfgsl.so libgsl.so libgslcblas.so liblapack95.so liblapack.so libfftw3.so
-        libhdf5_hl_fortran.so libhdf5_hl_f90cstub.so libhdf5_fortran.so libblas.so
-        libxrlf03.so libxrl.so libplplotfortran.so libplplot.so libcsirocsa.so
+        fgsl gsl gslcblas lapack95 lapack fftw3
+        hdf5_hl_fortran hdf5_hl_f90cstub hdf5_fortran blas
+        xrlf03 xrl plplotfortran plplot csirocsa
         )
-        LIST(APPEND LIST_OF_EXTERNAL_LIBRARIES ${BMAD_EXTERNAL}/lib/${LIB})
+        message(STATUS "Adding  ${BMAD_EXTERNAL}/lib/lib${LIB}${LIB_POSTFIX}")
+        LIST(APPEND LIST_OF_EXTERNAL_LIBRARIES ${BMAD_EXTERNAL}/lib/lib${LIB}${LIB_POSTFIX})
     endforeach()
     set(LIST_OF_EXTERNAL_LIBRARY_INCLUDES ${BMAD_EXTERNAL}/include)
     message(DEBUG "List of external libraries is ${LIST_OF_EXTERNAL_LIBRARIES}")
@@ -172,6 +179,53 @@ else()
     set(BUILD_TEST "${BUILD_TEST}" CACHE BOOL "Specify if building Bmad with various test executables '-DBUILD_TEST=ON'" FORCE)
 endif()
 
+# Linux/Mac specific testing - for 'deadline'
+include(CheckFunctionExists)
+
+# Make sure we find Homebrew's readline if available
+if(APPLE)
+    # Optional: automatically locate Brew's readline
+    execute_process(
+        COMMAND brew --prefix readline
+        OUTPUT_VARIABLE BREW_READLINE_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    if(BREW_READLINE_PREFIX)
+        message(STATUS "Using Homebrew readline: ${BREW_READLINE_PREFIX}")
+        include_directories(${BREW_READLINE_PREFIX}/include)
+        link_directories(${BREW_READLINE_PREFIX}/lib)
+    endif()
+
+
+endif()
+
+# Check if append_history exists in readline/history.h
+set(CMAKE_REQUIRED_LIBRARIES readline)
+check_function_exists(append_history HAVE_APPEND_HISTORY)
+
+if(HAVE_APPEND_HISTORY)
+    message(STATUS "append_history() found")
+else()
+    message(STATUS "append_history() NOT found — using fallback behavior")
+endif()
+
+if(APPLE)
+    set(CMAKE_C_FLAGS "-I/opt/X11/include")
+    set(CMAKE_EXE_LINKER_FLAGS "-L/opt/X11/lib")
+    find_package(X11 REQUIRED)
+
+    message(STATUS "ARE OVER HERE")
+
+#    find_package(X11 REQUIRED)
+#    target_include_directories(your_target PRIVATE ${X11_INCLUDE_DIR})
+#    target_link_libraries(your_target PRIVATE ${X11_LIBRARIES})
+
+endif()
+
+# Make the result available to your source
+add_definitions(-DHAVE_APPEND_HISTORY=${HAVE_APPEND_HISTORY})
+
 message(STATUS "********************************************\n")
 foreach(DIR ${DIRLIST})
 
@@ -210,6 +264,16 @@ foreach(DIR ${BUILD_LIST})
     message(STATUS "---- BUILDING - ${DIR} ----")
     message(STATUS "*********************************\n")
     add_subdirectory(${DIR})
+
+if(APPLE)
+    set(CMAKE_C_FLAGS "-I/opt/X11/include")
+    set(CMAKE_EXE_LINKER_FLAGS "-L/opt/X11/lib")
+    message(STATUS "ARE OVER HERE1")
+
+#    target_include_directories(${DIR} PRIVATE ${X11_INCLUDE_DIR})
+#   target_link_libraries(${DIR} PRIVATE ${X11_LIBRARIES})
+endif()
+
     message(STATUS "---- END BUILD - ${DIR} ----")
     message(STATUS "*********************************\n")
 
@@ -219,4 +283,3 @@ endforeach()
 message("This concludes the build of the bmad package\n")
 
 message(STATUS "********************************************")
-

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(ACC)
+project(BMADPROJ)
 
 set(EXECUTABLE_NAME )
 
@@ -14,7 +14,7 @@ else()
     )
 endif()
 
-include_directories(${BMAD_EXTERNAL} ${INC_DIRS})
+#include_directories(${BMAD_EXTERNAL} ${INC_DIRS})
 
 enable_language( Fortran )
 

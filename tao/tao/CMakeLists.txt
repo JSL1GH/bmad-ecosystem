@@ -9,9 +9,18 @@ message(DEBUG "Value of ${EXECUTABLE_NAME}_SRC_FILES is - ${${EXECUTABLE_NAME}_S
 
 add_executable(${EXECUTABLE_NAME} ${${EXECUTABLE_NAME}_SRC_FILES})
 
+target_include_directories(${EXECUTABLE_NAME}
+    PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/tao/modules>
+#        $<TARGET_PROPERTY:tao,Fortran_MODULE_DIRECTORY>
+)
+
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE tao bmad sim_utils forest gomp readline ${LIST_OF_EXTERNAL_LIBRARIES} X11)
 
 message(STATUS "PLACING BUILD OF ${EXECUTABLE_NAME} in ${CMAKE_BINARY_DIR}/bin")
+
+get_target_property(_mods tao Fortran_MODULE_DIRECTORY)
+message(STATUS "tao module dir = ${_mods}")
 
 # here we fix the name and call it tao
 set_target_properties(${EXECUTABLE_NAME} PROPERTIES

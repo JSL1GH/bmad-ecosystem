@@ -12,6 +12,12 @@ message(DEBUG "Value of ${EXECUTABLE_NAME}_SRC_FILES is - ${${EXECUTABLE_NAME}_S
 
 add_executable(${EXECUTABLE_NAME} ${${EXECUTABLE_NAME}_SRC_FILES})
 
+target_include_directories(${EXECUTABLE_NAME}
+    PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/cpp_bmad_interface/modules>
+#        $<TARGET_PROPERTY:tao,Fortran_MODULE_DIRECTORY>
+)
+
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE cpp_bmad_interface tao bmad sim_utils forest gomp readline ${LIST_OF_EXTERNAL_LIBRARIES} X11)
 
 message(STATUS "PLACING BUILD OF ${EXECUTABLE_NAME} in ${CMAKE_BINARY_DIR}/bin")
