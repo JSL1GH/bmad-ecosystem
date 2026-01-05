@@ -86,6 +86,7 @@ find_package(FGSL REQUIRED)
 find_package(FFTW REQUIRED)
 #find_package(lapack REQUIRED)
 find_package(LAPACK95 REQUIRED)
+find_package(PLPLOT REQUIRED)
 
 set(${LIBNAME}_DEP_LIBS ${fgsl_LIBRARIES} ${gsl_LIBRARIES} ${plplot_LIBRARIES} blas ${fftw_LIBRARIES} ${lapack95_LIBRARIES})
 
