@@ -68,7 +68,7 @@ add_library(${LIBNAME} ${${LIBNAME}_SRC_FILES})
 
 # here are the list of libraries to link against
 #find_package(PLPLOT CONFIG REQUIRED COMPONENTS plplot)
-#find_package(plplot CONFIG REQUIRED COMPONENTS plplot)
+find_package(plplot CONFIG REQUIRED COMPONENTS plplot)
 
 #get_cmake_property(_vars VARIABLES)
 
@@ -86,9 +86,10 @@ find_package(FGSL REQUIRED)
 find_package(FFTW REQUIRED)
 #find_package(lapack REQUIRED)
 find_package(LAPACK95 REQUIRED)
-find_package(PLPLOT REQUIRED)
+#find_package(PLPLOT REQUIRED)
 
-set(${LIBNAME}_DEP_LIBS ${fgsl_LIBRARIES} ${gsl_LIBRARIES} ${plplot_LIBRARIES} blas ${fftw_LIBRARIES} ${lapack95_LIBRARIES})
+#set(${LIBNAME}_DEP_LIBS ${fgsl_LIBRARIES} ${gsl_LIBRARIES} ${plplot_LIBRARIES} blas ${fftw_LIBRARIES} ${lapack95_LIBRARIES})
+set(${LIBNAME}_DEP_LIBS ${fgsl_LIBRARIES} ${gsl_LIBRARIES} blas ${fftw_LIBRARIES} ${lapack95_LIBRARIES})
 
 message(STATUS "OUR DEP_LIBS FOR sim_utils is ${LIBNAME}_DEP_LIBS - ${${LIBNAME}_DEP_LIBS}")
 
