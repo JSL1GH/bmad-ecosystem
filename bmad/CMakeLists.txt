@@ -68,99 +68,16 @@ message(STATUS "1. Working on ${LIBNAME}")
 # this does the actual build of the library - done at 'make' time, not at cmake time!
 # places the ${LIBNAME}.so file in the build directory/${LIBNAME}/lib${LIBNAME}.so
 add_library(${LIBNAME} ${${LIBNAME}_SRC_FILES})
+add_library(BMAD_ECOSYSTEM::${LIBNAME} ALIAS ${LIBNAME})
 
 find_package(XRAYLIB REQUIRED)
+find_package(HDF5BMAD REQUIRED)
 
-if (APPLE)
-    #Your top-level project is picking up Homebrew’s HDF5 instead of the one you built in ExternalProject_Add. On macOS, this is extremely common because #Homebrew installs libraries in /opt/homebrew/... and CMake’s module mode (FindHDF5.cmake) has higher precedence than the config files you built.
-    #Solution: Force config mode by setting HDF5_DIR to your install path before calling find_package:
-
-    #it turns out that all of the ChatGPT suggestions did not work
-    #until at the end when it said we basically need to hardcode our version of hdf5
-    #into the CMakeLists.txt file
-
-    # ------------------------------------------------------------------
-    # Find HDF5 (Fortran enabled)
-    # ------------------------------------------------------------------
-    # this is required to force cmake to find our config file before OS (Apple - Homebrew)
-    find_package(HDF5 CONFIG REQUIRED COMPONENTS Fortran)
-
-    # ============================================================
-    # Explicit HDF5 import (bypasses broken HDF5 config files)
-    # ============================================================
-
-    set(HDF5_PREFIX ${BMAD_EXTERNAL})
-    set(POSTFIX "dylib")
-
-    # --- Core C library ---
-    add_library(HDF5::C UNKNOWN IMPORTED)
-    set_target_properties(HDF5::C PROPERTIES
-        IMPORTED_LOCATION "${HDF5_PREFIX}/lib/libhdf5.${POSTFIX}"
-        INTERFACE_INCLUDE_DIRECTORIES "${HDF5_PREFIX}/include"
-    )
-
-    # --- High-level C library ---
-    add_library(HDF5::HL UNKNOWN IMPORTED)
-    set_target_properties(HDF5::HL PROPERTIES
-        IMPORTED_LOCATION "${HDF5_PREFIX}/lib/libhdf5_hl.${POSTFIX}"
-        INTERFACE_INCLUDE_DIRECTORIES "${HDF5_PREFIX}/include"
-    )
-    target_link_libraries(HDF5::HL INTERFACE HDF5::C)
-
-    # --- Fortran library ---
-    add_library(HDF5::Fortran UNKNOWN IMPORTED)
-    set_target_properties(HDF5::Fortran PROPERTIES
-        IMPORTED_LOCATION "${HDF5_PREFIX}/lib/libhdf5_fortran.${POSTFIX}"
-        INTERFACE_INCLUDE_DIRECTORIES "${HDF5_PREFIX}/include"
-    )
-
-    # --- Fortran High-level ---
-    add_library(HDF5::HL_Fortran UNKNOWN IMPORTED)
-    set_target_properties(HDF5::HL_Fortran PROPERTIES
-        IMPORTED_LOCATION "${HDF5_PREFIX}/lib/libhdf5_hl_fortran.${POSTFIX}"
-        INTERFACE_INCLUDE_DIRECTORIES "${HDF5_PREFIX}/include"
-    )
-
-    # --- HL Fortran C stubs (THIS WAS MISSING) ---
-    add_library(HDF5::HL_F90CStub UNKNOWN IMPORTED)
-    set_target_properties(HDF5::HL_F90CStub PROPERTIES
-        IMPORTED_LOCATION "${HDF5_PREFIX}/lib/libhdf5_hl_f90cstub.${POSTFIX}"
-        INTERFACE_INCLUDE_DIRECTORIES "${HDF5_PREFIX}/include"
-    )
-
-    # --- Fortran depends on C ---
-    target_link_libraries(HDF5::Fortran INTERFACE HDF5::C)
-
-    target_link_libraries(HDF5::HL_Fortran INTERFACE
-        HDF5::HL_F90CStub
-        HDF5::Fortran
-    )
-
-    target_link_libraries(HDF5::HL_F90CStub INTERFACE
-        HDF5::HL
-    )
-
-    target_link_libraries(${LIBNAME}
-        PUBLIC
-#            ${DEP_LIBS} forest sim_utils ${xraylib_LIBRARIES}
-            forest sim_utils ${xraylib_LIBRARIES}
-    )
-
-    target_link_libraries(${LIBNAME}
-        PRIVATE
-            HDF5::HL_Fortran
-    )
-else()
-#    set(${LIBNAME}_DEP_LIBS ${fgsl_LIBRARIES} ${gsl_LIBRARIES} ${plplot_LIBRARIES} blas ${fftw_LIBRARIES} ${lapack95_LIBRARIES})
-
-#    target_link_libraries(${LIBNAME}
-#        PUBLIC
-#            ${DEP_LIBS} forest sim_utils ${xraylib_LIBRARIES}
-#            forest sim_utils ${xraylib_LIBRARIES}
-#    ) 
-    set(DEP_LIBS forest sim_utils ${xraylib_LIBRARIES})
-    target_link_libraries(${LIBNAME} PUBLIC ${${LIBNAME}_DEP_LIBS} ${DEP_LIBS})
-endif() # (if (APPLE))
+#target_link_libraries(${LIBNAME} PRIVATE HDF5BMAD::HL_Fortran)
+target_link_libraries(${LIBNAME} PUBLIC HDF5BMAD::HL_Fortran)
+target_link_libraries(${LIBNAME} PUBLIC XRAYLIB::xraylib_fortran)
+target_link_libraries(${LIBNAME} PUBLIC BMAD_ECOSYSTEM::forest)
+target_link_libraries(${LIBNAME} PUBLIC BMAD_ECOSYSTEM::sim_utils)
 
 message(DEBUG "This will be the build of ${LIBNAME} directory") # - ${CMAKE_BINARY_DIR} - ${CMAKE_CURRENT_BINARY_DIR} - ${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -170,42 +87,13 @@ message(DEBUG "This will be the build of ${LIBNAME} directory") # - ${CMAKE_BINA
 
 #I DON'T KNOW IF THIS IS NEEDED!
 
-foreach(dep_lib forest sim_utils)
-
-    target_include_directories(${LIBNAME} PRIVATE
-        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${dep_lib}/modules>
-    )
-
-endforeach()
-
-#target_include_directories(${LIBNAME} PUBLIC
-#    ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/include ${CMAKE_BINARY_DIR}/modules ${CMAKE_BINARY_DIR}/sim_utils/modules)
-set(${LIBNAME}_INCLUDES)
-
-
-#if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/include)
-#    set(${LIBNAME}_INCLUDES $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-#endif()
-
-##if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/include)
-#    set(${LIBNAME}_INCLUDES $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)    
-    list(APPEND ${LIBNAME}_INCLUDES $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
-##endif()
-##if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/include)
-#    set(${LIBNAME}_INCLUDES $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)    
-    list(APPEND ${LIBNAME}_INCLUDES $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
-##endif()
-
-list(APPEND ${LIBNAME}_INCLUDES
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
-    $<INSTALL_INTERFACE:include>
-    $<INSTALL_INTERFACE:modules>
-)
-
 #Then export that directory (from set_target_properties) to consumers:
 #PUBLIC is important — it propagates to dependent targets.
 target_include_directories(${LIBNAME} PUBLIC 
-   ${${LIBNAME}_INCLUDES}
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:modules>
 )
 
 # this tells the build to place mod files into the ${CMAKE_BINARY_DIR}/modules directory
@@ -255,7 +143,15 @@ install(TARGETS ${LIBNAME} PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/in
 # place the targets of this library into the lib directory of the CMAKE_INSTALL_PREFIX area
 install(TARGETS ${LIBNAME} LIBRARY DESTINATION lib)
 
-install(TARGETS ${LIBNAME} EXPORT ${LIBNAME}Targets)
+#install(TARGETS ${LIBNAME} EXPORT ${LIBNAME}Targets)
+
+install(TARGETS ${LIBNAME}
+  EXPORT BMAD_ECOSYSTEMTargets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
 install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.inc")
 
 foreach (DIR ${${LIBNAME}_SRC_DIRS})

@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(BMADPROJ LANGUAGES CXX Fortran)
+#project(BMAD_ECOSYSTEM LANGUAGES CXX Fortran)
+project(BMAD_ECOSYSTEM VERSION 1.0.0 LANGUAGES CXX Fortran)
+
+list(PREPEND CMAKE_MODULE_PATH
+     "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+#include(GNUInstallDirs)
 
 #determine the place from which cmake is being invoked
 if(NOT DEFINED BASEDIR)
@@ -22,7 +30,9 @@ message(DEBUG "VALUE of build directory is ${CMAKE_BINARY_DIR}")
 #note that these can be saved in a different file and included
 
 #for d in hdf5 fftw lapack lapack95 gsl fgsl forest xraylib sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests
-set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests)
+#set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests)
+#set(DIRLIST forest )#sim_utils) #sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests)
+set(DIRLIST forest sim_utils bmad tao)
 #set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux)# bsim util_programs lux regression_tests)
 
 option(BUILD_SHARED_LIBS "Specify if do not want shared object libraries (prefer static '.a') '-DBUILD_SHARED_LIBS=OFF'" ON)
@@ -130,6 +140,27 @@ if (APPLE)
     set(LIB_POSTFIX ".dylib")
 endif()
 
+# use our GSL first (external_stack - if it's found, we go with it)
+find_package(GSL QUIET)
+if (NOT GSL_FOUND)
+# see if we can find one on the system
+    find_package(GSL QUIET CONFIG)
+endif()
+if (NOT GSL_FOUND)
+# make our own version of gsl and provide a target for it
+    message(STATUS "GSL not found via config or find_package - creating imported target")
+    add_library(GSL::gsl SHARED IMPORTED)
+
+    set_target_properties(GSL::gsl PROPERTIES
+        IMPORTED_LOCATION
+            "${BMAD_EXTERNAL}/lib/libgsl${CMAKE_SHARED_LIBRARY_SUFFIX}"
+        INTERFACE_INCLUDE_DIRECTORIES
+            "${BMAD_EXTERNAL}/include"
+    )
+endif()
+
+
+
 #do we want to use CMAKE_LIBRARY_PATH instead of all this?
 if(DEFINED BMAD_EXTERNAL)
     foreach (LIB 
@@ -137,14 +168,14 @@ if(DEFINED BMAD_EXTERNAL)
         hdf5_hl_fortran hdf5_hl_f90cstub hdf5_fortran blas
         xrlf03 xrl plplotfortran plplot csirocsa
         )
-        message(STATUS "Adding  ${BMAD_EXTERNAL}/lib/lib${LIB}${LIB_POSTFIX}")
+#        message(STATUS "Adding  ${BMAD_EXTERNAL}/lib/lib${LIB}${LIB_POSTFIX}")
         LIST(APPEND LIST_OF_EXTERNAL_LIBRARIES ${BMAD_EXTERNAL}/lib/lib${LIB}${LIB_POSTFIX})
     endforeach()
     set(LIST_OF_EXTERNAL_LIBRARY_INCLUDES ${BMAD_EXTERNAL}/include)
     message(DEBUG "List of external libraries is ${LIST_OF_EXTERNAL_LIBRARIES}")
     message(DEBUG "Path of external library includes is ${LIST_OF_EXTERNAL_LIBRARY_INCLUDES}")
-
-    include_directories(${LIST_OF_EXTERNAL_LIBRARY_INCLUDES})
+message(STATUS "COMMENTED OUT THE LINE THAT GETS ALL OF OUR EXTERNAL LIBRARIES - FOR NOW!")
+#JSL    include_directories(${LIST_OF_EXTERNAL_LIBRARY_INCLUDES})
 else()
     message(STATUS "No external paths for bmad have been defined - hope the system has them!")
 endif()
@@ -257,6 +288,21 @@ if(${ONE_EXCLUDED})
     message(STATUS "****  Note that excluding the building of some libraries may cause dependencies to not be available and the build may fail!  ****")
 endif()
 
+# one last piece of bookkeeping because of how we need to handle LAPACK and BLAS
+# --- LAPACK/BLAS (external prefix provides a CONFIG but no targets) ---
+find_package(LAPACK CONFIG REQUIRED)
+
+if(NOT TARGET BLAS::BLAS)
+  add_library(BLAS::BLAS INTERFACE IMPORTED)
+  target_link_libraries(BLAS::BLAS INTERFACE ${LAPACK_blas_LIBRARIES})
+endif()
+
+if(NOT TARGET LAPACK::LAPACK)
+  add_library(LAPACK::LAPACK INTERFACE IMPORTED)
+  target_link_libraries(LAPACK::LAPACK INTERFACE ${LAPACK_lapack_LIBRARIES} BLAS::BLAS)
+endif()
+
+
 #now we do the build
 
 foreach(DIR ${BUILD_LIST})
@@ -280,6 +326,55 @@ endif()
 endforeach()
 
 
-message("This concludes the build of the bmad package\n")
+message("This concludes the build of the bmad package - ${CMAKE_INSTALL_LIBDIR}\n")
+
+set(BMAD_ECOSYSTEM_INSTALL_CMAKEDIR
+#    "${CMAKE_INSTALL_PREFIX}/cmake/BMAD_ECOSYSTEM"
+    "${CMAKE_INSTALL_PREFIX}/lib/cmake/BMAD_ECOSYSTEM"
+)
+
+message("INSTALL_DIR WILL BE ${BMAD_ECOSYSTEM_INSTALL_CMAKEDIR}")
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/BMAD_ECOSYSTEMConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/BMAD_ECOSYSTEMConfig.cmake"
+    INSTALL_DESTINATION "${BMAD_ECOSYSTEM_INSTALL_CMAKEDIR}"
+)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/BMAD_ECOSYSTEMConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/BMAD_ECOSYSTEMConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/BMAD_ECOSYSTEMConfigVersion.cmake"
+    DESTINATION "${BMAD_ECOSYSTEM_INSTALL_CMAKEDIR}"
+)
+
+install(EXPORT BMAD_ECOSYSTEMTargets
+    FILE BMAD_ECOSYSTEMTargets.cmake
+    NAMESPACE BMAD_ECOSYSTEM::
+    DESTINATION "${BMAD_ECOSYSTEM_INSTALL_CMAKEDIR}"
+)
+
+#install(FILES
+#    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindFGSL.cmake"
+#    DESTINATION "${BMAD_ECOSYSTEM_INSTALL_CMAKEDIR}/modules"
+#)
+
+#just use a global Find*.cmake command
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake/"
+  DESTINATION "${BMAD_ECOSYSTEM_INSTALL_CMAKEDIR}/modules"
+  FILES_MATCHING PATTERN "Find*.cmake"
+)
 
 message(STATUS "********************************************")
+
+
+#GUILLAUME - HSR modeling tools, database, transition
+#

@@ -54,109 +54,48 @@ message(DEBUG "THIS makes the library - ${LIBNAME} - from the .f90 files - list 
 message(STATUS "1. Working on ${LIBNAME}")
 
 add_library(${LIBNAME} ${${LIBNAME}_SRC_FILES})
+add_library(BMAD_ECOSYSTEM::${LIBNAME} ALIAS ${LIBNAME})
 
-target_link_libraries(${LIBNAME} ${DEP_LIBS} bmad sim_utils)
+target_link_libraries(${LIBNAME} PUBLIC BMAD_ECOSYSTEM::bmad BMAD_ECOSYSTEM::sim_utils BMAD_ECOSYSTEM::forest ${DEP_LIBS})
 
 message(DEBUG "This will be the build of ${LIBNAME} directory")
 
-
-#[[
-#I WANT TO TRY TO LEAVE THIS OUT AND SEE WHAT HAPPENS! - JSL
-foreach(dep_lib forest sim_utils bmad)
-#foreach(dep_lib forest sim_utils bmad tao)
-
-    target_include_directories(${LIBNAME} PRIVATE
-        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${dep_lib}/modules>
-#        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
-#        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/modules>
-    )
-
-endforeach()
-#foreach(dep_lib forest sim_utils bmad tao)
-#foreach(dep_lib forest sim_utils bmad)
-
-]]
-
-
-#[[
-foreach(tao)
-    target_include_directories(${LIBNAME} PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${dep_lib}/modules>
-#        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
-#        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/modules>
-    )
-endforeach()
-]]
-
-##if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/include)
-#if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/include)
-#    set(${LIBNAME}_INCLUDES $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-    list(APPEND ${LIBNAME}_INCLUDES $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
-##endif()
-##if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/modules)
-#if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/include)
-#    set(${LIBNAME}_INCLUDES $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-    list(APPEND ${LIBNAME}_INCLUDES $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>)
-##endif()
-
-list(APPEND ${LIBNAME}_INCLUDES
-#NOT SURE WHAT THIS DOES
-#    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
-    $<INSTALL_INTERFACE:include>
-    $<INSTALL_INTERFACE:modules>
-)
-
 target_include_directories(${LIBNAME} PUBLIC 
-   ${${LIBNAME}_INCLUDES}
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:modules>
 )
-
-## this is where to find the include and modules files needed for our build of ${LIBNAME}
-#target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/include ${CMAKE_BINARY_DIR}/modules)
-
-# this tells the build to place mod files into the ${CMAKE_BINARY_DIR}/modules directory
-#set_target_properties(${LIBNAME} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
-
-# this is how the library files get into the /lib and /bin directories
-#set_target_properties(${LIBNAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
 
 #NEXT IS BETTER set_target_properties(${LIBNAME} PROPERTIES Fortran_MODULE_DIRECTORY modules)
 set_target_properties(${LIBNAME} PROPERTIES
     Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules"
 )
 
-#set_target_properties(${LIBNAME} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
-
 message(STATUS "Our value of CMAKE_CURRENT_BINARY_DIR is ${CMAKE_CURRENT_BINARY_DIR}")
 
-file(COPY ${INC_FILES}
-     DESTINATION "${CMAKE_BINARY_DIR}/${LIBNAME}/include")
-
-
-##necessary for install
-#install(TARGETS ${LIBNAME} PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include"
-#)
-
-#necessary for install
-install(TARGETS ${LIBNAME} PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
+if(INC_FILES)
+  file(COPY ${INC_FILES}
+    DESTINATION "${CMAKE_BINARY_DIR}/${LIBNAME}/include")
+endif()
 
 # place the targets of this library into the lib directory of the CMAKE_INSTALL_PREFIX area
 install(TARGETS ${LIBNAME} LIBRARY DESTINATION lib)
 
-install(TARGETS ${LIBNAME} EXPORT ${LIBNAME}Targets)
+#install(TARGETS ${LIBNAME} EXPORT ${LIBNAME}Targets)
+install(TARGETS ${LIBNAME}
+  EXPORT BMAD_ECOSYSTEMTargets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
 install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.inc")
 
 
 foreach (DIR ${${LIBNAME}_SRC_DIRS})
     install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING PATTERN "*.f90")
 endforeach()
-
-
-#install(DIRECTORY code DESTINATION src/${LIBNAME} FILESx2_MATCHING PATTERN "*.f90")
-
-
-#install(DIRECTORY code DESTINATION src/${LIBNAME} FILES_MATCHING PATTERN "*.f90")
-#install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/" DESTINATION modules FILES_MATCHING PATTERN "*.mod")
 
 install(
     DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules/"

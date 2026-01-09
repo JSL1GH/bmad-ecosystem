@@ -56,8 +56,9 @@ message(DEBUG "THIS makes the library - ${LIBNAME} - from the .f90 files - list 
 message(STATUS "1. Working on ${LIBNAME}")
 
 add_library(${LIBNAME} ${${LIBNAME}_SRC_FILES})
+add_library(BMAD_ECOSYSTEM::${LIBNAME} ALIAS ${LIBNAME})
 
-target_link_libraries(${LIBNAME} ${DEP_LIBS} bmad)
+target_link_libraries(${LIBNAME} ${DEP_LIBS} BMAD_ECOSYSTEM::bmad)
 
 message(DEBUG "This will be the build of ${LIBNAME} directory")
 
@@ -106,12 +107,19 @@ install(TARGETS ${LIBNAME} PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/in
 ]]
 
 #necessary for install
-install(TARGETS ${LIBNAME} PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
+#JSL install(TARGETS ${LIBNAME} PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
 
 # place the targets of this library into the lib directory of the CMAKE_INSTALL_PREFIX area
 install(TARGETS ${LIBNAME} LIBRARY DESTINATION lib)
 
-install(TARGETS ${LIBNAME} EXPORT ${LIBNAME}Targets)
+#install(TARGETS ${LIBNAME} EXPORT ${LIBNAME}Targets)
+install(TARGETS ${LIBNAME}
+  EXPORT BMAD_ECOSYSTEMTargets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
 install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.inc")
 
 

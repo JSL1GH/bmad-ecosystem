@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(BMADPROJ)
+project(BMAD_ECOSYSTEM)
 
 set(LIBNAME forest)
 
@@ -48,7 +48,9 @@ message(STATUS "1. Working on ${LIBNAME}")
 
 # this does the actual build of the library - done at 'make' time, not at cmake time!
 # places the ${LIBNAME}.so file in the build directory/${LIBNAME}/lib${LIBNAME}.so
+
 add_library(${LIBNAME} ${${LIBNAME}_SRC_FILES})
+add_library(BMAD_ECOSYSTEM::${LIBNAME} ALIAS ${LIBNAME})
 
 #include_directories(${BMAD_EXTERNAL} ${INC_DIRS})
 
@@ -94,7 +96,18 @@ target_include_directories(${LIBNAME} PUBLIC
 #target_include_directories(${LIBNAME} PUBLIC include)
 
 # here are the list of libraries to link against
-target_link_libraries(${LIBNAME} ${DEP_LIBS})
+#target_link_libraries(${LIBNAME} ${DEP_LIBS})
+
+#[[ JSL - We did this just for proof of principle!
+ make this public allows anyone that links forest to also add gsl as a dependency
+
+target_link_libraries(forest
+    PUBLIC
+        GSL::gsl
+)
+]]
+
+target_link_libraries(forest PRIVATE ${DEP_LIBS})
 
 message(DEBUG "This will be the build of ${LIBNAME} directory")
 
@@ -158,9 +171,18 @@ file(COPY ${INC_FILES}
 install(TARGETS ${LIBNAME} PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
 
 # place the targets of this library into the lib directory of the CMAKE_INSTALL_PREFIX area
-install(TARGETS ${LIBNAME} LIBRARY DESTINATION lib)
+install(TARGETS ${LIBNAME}
+        EXPORT BMAD_ECOSYSTEMTargets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        INCLUDES DESTINATION include
+)
 
-install(TARGETS ${LIBNAME} EXPORT ${LIBNAME}Targets)
+#install(TARGETS ${LIBNAME} EXPORT ${LIBNAME}Targets)
+
+
+
 install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.inc")
 #install(DIRECTORY code DESTINATION src/${LIBNAME} FILESx2_MATCHING PATTERN "*.f90")
 install(DIRECTORY code DESTINATION src/${LIBNAME} FILES_MATCHING PATTERN "*.f90")

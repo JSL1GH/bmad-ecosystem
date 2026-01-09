@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
+message(STATUS "Now in file sim_utils/CMakeLists.txt")
 project(BMADPROJ)
 
 set(LIBNAME sim_utils)
@@ -65,10 +66,31 @@ message(STATUS "1. Working on ${LIBNAME}")
 # this does the actual build of the library - done at 'make' time, not at cmake time!
 # places the ${LIBNAME}.so file in the build directory/${LIBNAME}/lib${LIBNAME}.so
 add_library(${LIBNAME} ${${LIBNAME}_SRC_FILES})
+#message(STATUS "PART 1")
+add_library(BMAD_ECOSYSTEM::${LIBNAME} ALIAS ${LIBNAME})
+#message(STATUS "PART 2")
 
 # here are the list of libraries to link against
 #find_package(PLPLOT CONFIG REQUIRED COMPONENTS plplot)
-find_package(plplot CONFIG REQUIRED COMPONENTS plplot)
+#JSL find_package(plplot CONFIG REQUIRED COMPONENTS plplot)
+
+find_package(plplot CONFIG REQUIRED)
+message(STATUS "sim_utils: plplot_DIR='${plplot_DIR}', plplot_FOUND='${plplot_FOUND}'")
+
+#[[
+get_property(_tgtlist DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
+message(STATUS "Targets currently known: ${_tgtlist}")
+
+message(STATUS "PART 3")
+
+get_property(_allTargets GLOBAL PROPERTY TARGETS)
+foreach(t IN LISTS _allTargets)
+  if(t MATCHES "plplot|PLplot|PLPLOT")
+    message(STATUS "PLplot target: ${t}")
+  endif()
+endforeach()
+message(STATUS "PART 4")
+]]
 
 #get_cmake_property(_vars VARIABLES)
 
@@ -76,30 +98,31 @@ find_package(plplot CONFIG REQUIRED COMPONENTS plplot)
 #  message(STATUS "${_var} = [${${_var}}]")
 #endforeach()
 
-#find_package(plplot CONFIG REQUIRED)
-#message(STATUS "plplot variables have the value of ${plplot_LIBRARIES}")
-#find_package(fgsl REQUIRED)
-#find_package(fftw REQUIRED)
-##find_package(lapack REQUIRED)
-#find_package(lapack95 REQUIRED)
 find_package(FGSL REQUIRED)
-find_package(FFTW REQUIRED)
-#find_package(lapack REQUIRED)
+find_package(FFTW3 REQUIRED MODULE)
 find_package(LAPACK95 REQUIRED)
-#find_package(PLPLOT REQUIRED)
 
 #set(${LIBNAME}_DEP_LIBS ${fgsl_LIBRARIES} ${gsl_LIBRARIES} ${plplot_LIBRARIES} blas ${fftw_LIBRARIES} ${lapack95_LIBRARIES})
-set(${LIBNAME}_DEP_LIBS ${fgsl_LIBRARIES} ${gsl_LIBRARIES} blas ${fftw_LIBRARIES} ${lapack95_LIBRARIES})
+#set(${LIBNAME}_DEP_LIBS ${fgsl_LIBRARIES} ${gsl_LIBRARIES} blas ${fftw_LIBRARIES} ${lapack95_LIBRARIES})
+#set(${LIBNAME}_DEP_LIBS FGSL::fgsl ${gsl_LIBRARIES} blas ${fftw_LIBRARIES} ${lapack95_LIBRARIES})
+#set(${LIBNAME}_DEP_LIBS FGSL::fgsl ${gsl_LIBRARIES} blas FFTW3::fftw3 ${lapack95_LIBRARIES})
+#we shouldn't depend directly on blas
+#set(${LIBNAME}_DEP_LIBS FGSL::fgsl ${gsl_LIBRARIES} blas FFTW3::fftw3 LAPACK95::lapack95)
+set(${LIBNAME}_DEP_LIBS FGSL::fgsl ${gsl_LIBRARIES} FFTW3::fftw3 LAPACK95::lapack95)
 
 message(STATUS "OUR DEP_LIBS FOR sim_utils is ${LIBNAME}_DEP_LIBS - ${${LIBNAME}_DEP_LIBS}")
 
 #    target_include_directories(${DIR} PRIVATE ${X11_INCLUDE_DIR})
 #   target_link_libraries(${DIR} PRIVATE ${X11_LIBRARIES})
 if (APPLE)
-    target_link_libraries(${LIBNAME} ${${LIBNAME}_DEP_LIBS} PLPLOT::plplot
+    target_link_libraries(${LIBNAME} PUBLIC ${${LIBNAME}_DEP_LIBS} PLPLOT::plplot
     PLPLOT::plplotfortran readline ${X11_LIBRARIES})
 else()
-    target_link_libraries(${LIBNAME} ${${LIBNAME}_DEP_LIBS} readline)
+#    target_link_libraries(${LIBNAME} PUBLIC ${${LIBNAME}_DEP_LIBS} readline)
+#    target_link_libraries(${LIBNAME} PUBLIC ${${LIBNAME}_DEP_LIBS} PLPLOT::plplot
+#    PLPLOT::plplotfortran readline ${X11_LIBRARIES})
+    target_link_libraries(${LIBNAME} PUBLIC ${${LIBNAME}_DEP_LIBS}
+    PLPLOT::plplotfortran readline ${X11_LIBRARIES})
 endif()
 
 message(DEBUG "This will be the build of ${LIBNAME} directory")
@@ -113,19 +136,16 @@ set(${LIBNAME}_INCLUDES)
 #    set(${LIBNAME}_INCLUDES $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #endif()
 ##if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/include)
-    list(APPEND ${LIBNAME}_INCLUDES $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
 ##endif()
 ##if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/modules)
-    list(APPEND ${LIBNAME}_INCLUDES $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>)
 ##endif()
 
-list(APPEND ${LIBNAME}_INCLUDES
-    $<INSTALL_INTERFACE:include>
-    $<INSTALL_INTERFACE:modules>
-)
 
 target_include_directories(${LIBNAME} PUBLIC 
-   ${${LIBNAME}_INCLUDES}
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:modules>
 )
 
 # this tells the build to place mod files into the ${CMAKE_BINARY_DIR}/modules directory
@@ -140,6 +160,16 @@ target_include_directories(${LIBNAME} PUBLIC
 set_target_properties(${LIBNAME} PROPERTIES
     Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules"
 )
+
+# Make sim_utils module directory visible to dependents at build time
+target_include_directories(sim_utils PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+  $<INSTALL_INTERFACE:modules>
+)
+
+#FOR VERIFICATION PURPOSES
+get_target_property(_sim_utils_links sim_utils LINK_LIBRARIES)
+message(STATUS "sim_utils LINK_LIBRARIES=${_sim_utils_links}")
 
 #necessary for install
 #install(TARGETS ${LIBNAME} PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include"
@@ -188,4 +218,13 @@ endforeach()
 install(
     DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules/"
     DESTINATION modules
+)
+
+# place the targets of this library into the lib directory of the CMAKE_INSTALL_PREFIX area
+install(TARGETS ${LIBNAME}
+        EXPORT BMAD_ECOSYSTEMTargets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        INCLUDES DESTINATION include
 )
