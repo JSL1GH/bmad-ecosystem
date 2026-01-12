@@ -15,10 +15,12 @@ if(NOT DEFINED BMAD_EXTERNAL OR BMAD_EXTERNAL STREQUAL "")
   endif()
 endif()
 
-# instead of this
-# if(DEFINED BMAD_EXTERNAL AND NOT BMAD_EXTERNAL STREQUAL "")
-#   list(PREPEND CMAKE_PREFIX_PATH "${BMAD_EXTERNAL}")
-# endif()
+# If the consumer provided BMAD_EXTERNAL, use it as a prefix for dependencies.
+# This makes BMAD_ECOSYSTEM "just work" without requiring the consumer to also
+# maintain CMAKE_PREFIX_PATH manually.
+if(DEFINED BMAD_EXTERNAL AND NOT BMAD_EXTERNAL STREQUAL "")
+  list(PREPEND CMAKE_PREFIX_PATH "${BMAD_EXTERNAL}")
+endif()
 
 # Components requested by the consumer (may be empty)
 set(_bmad_components "${BMAD_ECOSYSTEM_FIND_COMPONENTS}")
