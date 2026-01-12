@@ -36,17 +36,17 @@ message(DEBUG "BUILDING LIST OF SRCS FROM ${LIBNAME} ${BASEDIR} ${SRCDIRS}")
 # loop through the directories and add any files that will be built to the ${NEXT_DIR_FILES} variable
 # at the end of discovering all of the files in a directory, we build the ${SRC_FILES} variable
 foreach(DIR ${${LIBNAME}_SRC_DIRS})
-    message(DEBUG "Looking at ${BASEDIR}/${LIBNAME}/${DIR}/*.f90")
-    file( GLOB NEXT_DIR_FILES
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.f90
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.f
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.cc
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.cpp
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.cxx
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.c
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.CC
-    )
-    list(APPEND ${LIBNAME}_SRC_FILES ${NEXT_DIR_FILES})
+  message(DEBUG "Looking at ${BASEDIR}/${LIBNAME}/${DIR}/*.f90")
+  file( GLOB NEXT_DIR_FILES
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.f
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.f90
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.c
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.cc
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.CC
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.cpp
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.cxx
+  )
+  list(APPEND ${LIBNAME}_SRC_FILES ${NEXT_DIR_FILES})
 endforeach()
 
 message(DEBUG "Value of ${LIBNAME}_SRC_FILES is - ${${LIBNAME}_SRC_FILES}")
@@ -110,7 +110,17 @@ install(TARGETS ${LIBNAME}
 install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.inc")
 
 foreach (DIR ${${LIBNAME}_SRC_DIRS})
-    install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING PATTERN "*.f90")
+#    install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING PATTERN "*.f90")
+#  install(DIRECTORY code DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING
+  install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING
+    PATTERN "*.f"
+    PATTERN "*.f90"
+    PATTERN "*.c"
+    PATTERN "*.cc"
+    PATTERN "*.CC"
+    PATTERN "*.cpp"
+    PATTERN "*.cxx"
+  )
 endforeach()
 
 install(

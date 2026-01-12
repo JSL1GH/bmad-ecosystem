@@ -37,13 +37,13 @@ message(DEBUG "BUILDING LIST OF SRCS FROM ${LIBNAME} ${BASEDIR} ${${LIBNAME}_SRC
 foreach(DIR ${${LIBNAME}_SRC_DIRS})
     message(DEBUG "Looking at ${BASEDIR}/${LIBNAME}/${DIR}/*.f90")
     file( GLOB NEXT_DIR_FILES
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.f90
         ${BASEDIR}/${LIBNAME}/${DIR}/*.f
+        ${BASEDIR}/${LIBNAME}/${DIR}/*.f90
+        ${BASEDIR}/${LIBNAME}/${DIR}/*.c
         ${BASEDIR}/${LIBNAME}/${DIR}/*.cc
+        ${BASEDIR}/${LIBNAME}/${DIR}/*.CC
         ${BASEDIR}/${LIBNAME}/${DIR}/*.cpp
         ${BASEDIR}/${LIBNAME}/${DIR}/*.cxx
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.c
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.CC
     )
     list(APPEND ${LIBNAME}_SRC_FILES ${NEXT_DIR_FILES})
 endforeach()
@@ -100,8 +100,21 @@ install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.inc")
 #install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/" DESTINATION modules FILES_MATCHING PATTERN "*.mod")
 #install(DIRECTORY "${CMAKE_BINARY_DIR}/" DESTINATION modules FILES_MATCHING PATTERN "*.mod")
 
+#foreach (DIR ${${LIBNAME}_SRC_DIRS})
+#    install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING PATTERN "*.f90")
+#endforeach()
 foreach (DIR ${${LIBNAME}_SRC_DIRS})
-    install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING PATTERN "*.f90")
+#  install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING
+  install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING
+#  install(DIRECTORY code DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING
+    PATTERN "*.f"
+    PATTERN "*.f90"
+    PATTERN "*.c"
+    PATTERN "*.cc"
+    PATTERN "*.CC"
+    PATTERN "*.cpp"
+    PATTERN "*.cxx"
+  )
 endforeach()
 
 install(

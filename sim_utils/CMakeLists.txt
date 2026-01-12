@@ -47,13 +47,13 @@ message(DEBUG "BUILDING LIST OF SRCS FROM ${LIBNAME} ${BASEDIR} ${${LIBNAME}_SRC
 foreach(DIR ${${LIBNAME}_SRC_DIRS})
     message(DEBUG "Looking at ${BASEDIR}/${LIBNAME}/${DIR}/*.f90")
     file( GLOB NEXT_DIR_FILES
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.f90
         ${BASEDIR}/${LIBNAME}/${DIR}/*.f
+        ${BASEDIR}/${LIBNAME}/${DIR}/*.f90
+        ${BASEDIR}/${LIBNAME}/${DIR}/*.c
         ${BASEDIR}/${LIBNAME}/${DIR}/*.cc
+        ${BASEDIR}/${LIBNAME}/${DIR}/*.CC
         ${BASEDIR}/${LIBNAME}/${DIR}/*.cpp
         ${BASEDIR}/${LIBNAME}/${DIR}/*.cxx
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.c
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.CC
     )
     list(APPEND ${LIBNAME}_SRC_FILES ${NEXT_DIR_FILES})
 endforeach()
@@ -152,14 +152,14 @@ set_target_properties(${LIBNAME} PROPERTIES
 )
 
 # Make sim_utils module directory visible to dependents at build time
-target_include_directories(sim_utils PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
-  $<INSTALL_INTERFACE:modules>
-)
+#target_include_directories(sim_utils PUBLIC
+#  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+#  $<INSTALL_INTERFACE:modules>
+#)
 
 #FOR VERIFICATION PURPOSES
-get_target_property(_sim_utils_links sim_utils LINK_LIBRARIES)
-message(STATUS "sim_utils LINK_LIBRARIES=${_sim_utils_links}")
+#get_target_property(_sim_utils_links sim_utils LINK_LIBRARIES)
+#message(STATUS "sim_utils LINK_LIBRARIES=${_sim_utils_links}")
 
 #necessary for install
 #install(TARGETS ${LIBNAME} PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include"
@@ -193,8 +193,16 @@ install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.inc")
 
 
 foreach (DIR ${${LIBNAME}_SRC_DIRS})
-    install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING PATTERN "*.f90")
-    install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING PATTERN "*.c")
+  install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING
+#  install(DIRECTORY code DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING
+    PATTERN "*.f"
+    PATTERN "*.f90"
+    PATTERN "*.c"
+    PATTERN "*.cc"
+    PATTERN "*.CC"
+    PATTERN "*.cpp"
+    PATTERN "*.cxx"
+  )
 endforeach()
 
 #install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/" DESTINATION modules FILES_MATCHING PATTERN "*.mod")
