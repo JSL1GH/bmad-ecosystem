@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 3.18)
+#cmake_minimum_required(VERSION 3.18)
 
-project(BMADPROJ)
+#project(BMADPROJ)
 
 set(LIBNAME bmad)
+
+message(STATUS "Now in file ${LIBNAME}/CMakeLists.txt")
 
 if("${CONDA_BUILD}" STREQUAL "ON")
     set(INC_DIRS
@@ -17,7 +19,7 @@ endif()
 
 #include_directories(${BMAD_EXTERNAL} ${INC_DIRS})
 
-enable_language( Fortran )
+#enable_language( Fortran )
 
 #clear ${LIBNAME}_SRC_FILES
 set(${LIBNAME}_SRC_FILES)
@@ -60,7 +62,7 @@ foreach(DIR ${${LIBNAME}_SRC_DIRS})
     list(APPEND ${LIBNAME}_SRC_FILES ${NEXT_DIR_FILES})
 endforeach()
 
-message(STATUS "Value of ${LIBNAME}_SRC_FILES is - ${${LIBNAME}_SRC_FILES}")
+message(DEBUG "Value of ${LIBNAME}_SRC_FILES is - ${${LIBNAME}_SRC_FILES}")
 
 message(DEBUG "THIS makes the library - ${LIBNAME} - from the .f90 files - list is ${${LIBNAME}_SRC_FILES}}")
 message(STATUS "1. Working on ${LIBNAME}")
@@ -78,6 +80,7 @@ target_link_libraries(${LIBNAME} PUBLIC HDF5BMAD::HL_Fortran)
 target_link_libraries(${LIBNAME} PUBLIC XRAYLIB::xraylib_fortran)
 target_link_libraries(${LIBNAME} PUBLIC BMAD_ECOSYSTEM::forest)
 target_link_libraries(${LIBNAME} PUBLIC BMAD_ECOSYSTEM::sim_utils)
+target_link_libraries(${LIBNAME} PRIVATE ${DEP_LIBS})
 
 message(DEBUG "This will be the build of ${LIBNAME} directory") # - ${CMAKE_BINARY_DIR} - ${CMAKE_CURRENT_BINARY_DIR} - ${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -89,13 +92,21 @@ message(DEBUG "This will be the build of ${LIBNAME} directory") # - ${CMAKE_BINA
 
 #Then export that directory (from set_target_properties) to consumers:
 #PUBLIC is important — it propagates to dependent targets.
+#[[
 target_include_directories(${LIBNAME} PUBLIC 
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
   $<INSTALL_INTERFACE:include>
   $<INSTALL_INTERFACE:modules>
 )
-
+]]
+target_include_directories(${LIBNAME} PUBLIC
+#  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:modules>
+)
 # this tells the build to place mod files into the ${CMAKE_BINARY_DIR}/modules directory
 #JSL - set_target_properties(${LIBNAME} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
 
@@ -127,7 +138,7 @@ set_target_properties(${LIBNAME} PROPERTIES
 #  PUBLIC_HEADER DESTINATION include
 #)
 
-message(STATUS "Our value of CMAKE_CURRENT_BINARY_DIR is ${CMAKE_CURRENT_BINARY_DIR}")
+#message(STATUS "Our value of CMAKE_CURRENT_BINARY_DIR is ${CMAKE_CURRENT_BINARY_DIR}")
 
 # get the include files into our build area
 #if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/include)

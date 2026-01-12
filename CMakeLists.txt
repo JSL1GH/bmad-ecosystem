@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.18)
 
+#We are placing our build in bmadTryInternal    (CMAKE_INSTALL_PREFIX)
+#We are dependent on the bmadTryExternal build  (BMAD_EXTERNAL CMAKE_PREFIX_PATH)
+#cmake .. -DCMAKE_INSTALL_PREFIX:PATH=/home/cfsd/laster/bmadTryInternal -DBMAD_EXTERNAL=/home/cfsd/laster/bmadTryExternal -DCMAKE_PREFIX_PATH=/home/cfsd/laster/bmadTryExternal
+
 #project(BMAD_ECOSYSTEM LANGUAGES CXX Fortran)
-project(BMAD_ECOSYSTEM VERSION 1.0.0 LANGUAGES CXX Fortran)
+project(BMAD_ECOSYSTEM VERSION 1.0.0 LANGUAGES C CXX Fortran)
 
 list(PREPEND CMAKE_MODULE_PATH
      "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -32,7 +36,7 @@ message(DEBUG "VALUE of build directory is ${CMAKE_BINARY_DIR}")
 #for d in hdf5 fftw lapack lapack95 gsl fgsl forest xraylib sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests
 #set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests)
 #set(DIRLIST forest )#sim_utils) #sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests)
-set(DIRLIST forest sim_utils bmad tao)
+set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux)
 #set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux)# bsim util_programs lux regression_tests)
 
 option(BUILD_SHARED_LIBS "Specify if do not want shared object libraries (prefer static '.a') '-DBUILD_SHARED_LIBS=OFF'" ON)
@@ -180,6 +184,12 @@ else()
     message(STATUS "No external paths for bmad have been defined - hope the system has them!")
 endif()
 
+#PROTECTION - if use incorrect build string
+if(CMAKE_INSTALL_PREFIX STREQUAL BMAD_EXTERNAL)
+  message(FATAL_ERROR
+    "BMAD_ECOSYSTEM install prefix must NOT be the same as BMAD_EXTERNAL")
+endif()
+
 # Define the option (this will set the variable from the command line if provided) - our default is PLPLOT!
 set(PLOT_TYPE "PLPLOT" CACHE STRING "Choose the option (PLPLOT, NOPLOT, PGPLOT)")
 
@@ -325,8 +335,8 @@ endif()
 
 endforeach()
 
-
-message("This concludes the build of the bmad package - ${CMAKE_INSTALL_LIBDIR}\n")
+message("This concludes the build of the bmad package\n")
+#message("This concludes the build of the bmad package - ${CMAKE_INSTALL_LIBDIR}\n")
 
 set(BMAD_ECOSYSTEM_INSTALL_CMAKEDIR
 #    "${CMAKE_INSTALL_PREFIX}/cmake/BMAD_ECOSYSTEM"

@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.18)
-
-message(STATUS "Now in file sim_utils/CMakeLists.txt")
-project(BMADPROJ)
+#cmake_minimum_required(VERSION 3.18)
 
 set(LIBNAME sim_utils)
+
+#project(BMADPROJ)
+message(STATUS "Now in file ${LIBNAME}/CMakeLists.txt")
 
 if("${CONDA_BUILD}" STREQUAL "ON")
     set(INC_DIRS
@@ -17,7 +17,7 @@ endif()
 
 #include_directories(${BMAD_EXTERNAL} ${INC_DIRS})
 
-enable_language( Fortran )
+#enable_language( Fortran )
 
 #clear ${LIBNAME}_SRC_FILES
 set(${LIBNAME}_SRC_FILES)
@@ -59,6 +59,7 @@ foreach(DIR ${${LIBNAME}_SRC_DIRS})
 endforeach()
 
 message(DEBUG "Value of ${LIBNAME}_SRC_FILES is - ${${LIBNAME}_SRC_FILES}")
+message(STATUS "JSL - Value of ${LIBNAME}_SRC_FILES is - ${${LIBNAME}_SRC_FILES}")
 
 message(DEBUG "THIS makes the library - ${LIBNAME} - from the .f90 files - list is ${${LIBNAME}_SRC_FILES}}")
 message(STATUS "1. Working on ${LIBNAME}")
@@ -66,48 +67,17 @@ message(STATUS "1. Working on ${LIBNAME}")
 # this does the actual build of the library - done at 'make' time, not at cmake time!
 # places the ${LIBNAME}.so file in the build directory/${LIBNAME}/lib${LIBNAME}.so
 add_library(${LIBNAME} ${${LIBNAME}_SRC_FILES})
-#message(STATUS "PART 1")
 add_library(BMAD_ECOSYSTEM::${LIBNAME} ALIAS ${LIBNAME})
-#message(STATUS "PART 2")
-
-# here are the list of libraries to link against
-#find_package(PLPLOT CONFIG REQUIRED COMPONENTS plplot)
-#JSL find_package(plplot CONFIG REQUIRED COMPONENTS plplot)
 
 find_package(plplot CONFIG REQUIRED)
 message(STATUS "sim_utils: plplot_DIR='${plplot_DIR}', plplot_FOUND='${plplot_FOUND}'")
 
-#[[
-get_property(_tgtlist DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
-message(STATUS "Targets currently known: ${_tgtlist}")
 
-message(STATUS "PART 3")
-
-get_property(_allTargets GLOBAL PROPERTY TARGETS)
-foreach(t IN LISTS _allTargets)
-  if(t MATCHES "plplot|PLplot|PLPLOT")
-    message(STATUS "PLplot target: ${t}")
-  endif()
-endforeach()
-message(STATUS "PART 4")
-]]
-
-#get_cmake_property(_vars VARIABLES)
-
-#foreach(_var ${_vars})
-#  message(STATUS "${_var} = [${${_var}}]")
-#endforeach()
 
 find_package(FGSL REQUIRED)
 find_package(FFTW3 REQUIRED MODULE)
 find_package(LAPACK95 REQUIRED)
 
-#set(${LIBNAME}_DEP_LIBS ${fgsl_LIBRARIES} ${gsl_LIBRARIES} ${plplot_LIBRARIES} blas ${fftw_LIBRARIES} ${lapack95_LIBRARIES})
-#set(${LIBNAME}_DEP_LIBS ${fgsl_LIBRARIES} ${gsl_LIBRARIES} blas ${fftw_LIBRARIES} ${lapack95_LIBRARIES})
-#set(${LIBNAME}_DEP_LIBS FGSL::fgsl ${gsl_LIBRARIES} blas ${fftw_LIBRARIES} ${lapack95_LIBRARIES})
-#set(${LIBNAME}_DEP_LIBS FGSL::fgsl ${gsl_LIBRARIES} blas FFTW3::fftw3 ${lapack95_LIBRARIES})
-#we shouldn't depend directly on blas
-#set(${LIBNAME}_DEP_LIBS FGSL::fgsl ${gsl_LIBRARIES} blas FFTW3::fftw3 LAPACK95::lapack95)
 set(${LIBNAME}_DEP_LIBS FGSL::fgsl ${gsl_LIBRARIES} FFTW3::fftw3 LAPACK95::lapack95)
 
 message(STATUS "OUR DEP_LIBS FOR sim_utils is ${LIBNAME}_DEP_LIBS - ${${LIBNAME}_DEP_LIBS}")
@@ -115,14 +85,25 @@ message(STATUS "OUR DEP_LIBS FOR sim_utils is ${LIBNAME}_DEP_LIBS - ${${LIBNAME}
 #    target_include_directories(${DIR} PRIVATE ${X11_INCLUDE_DIR})
 #   target_link_libraries(${DIR} PRIVATE ${X11_LIBRARIES})
 if (APPLE)
-    target_link_libraries(${LIBNAME} PUBLIC ${${LIBNAME}_DEP_LIBS} PLPLOT::plplot
-    PLPLOT::plplotfortran readline ${X11_LIBRARIES})
+  target_link_libraries(${LIBNAME}
+    PUBLIC
+      ${${LIBNAME}_DEP_LIBS}
+#      PLPLOT::plplot
+      PLPLOT::plplotfortran
+      readline
+      ${X11_LIBRARIES}
+  )
 else()
 #    target_link_libraries(${LIBNAME} PUBLIC ${${LIBNAME}_DEP_LIBS} readline)
 #    target_link_libraries(${LIBNAME} PUBLIC ${${LIBNAME}_DEP_LIBS} PLPLOT::plplot
 #    PLPLOT::plplotfortran readline ${X11_LIBRARIES})
-    target_link_libraries(${LIBNAME} PUBLIC ${${LIBNAME}_DEP_LIBS}
-    PLPLOT::plplotfortran readline ${X11_LIBRARIES})
+  target_link_libraries(${LIBNAME}
+    PUBLIC
+      ${${LIBNAME}_DEP_LIBS}
+      PLPLOT::plplotfortran
+      readline
+      ${X11_LIBRARIES}
+  )
 endif()
 
 message(DEBUG "This will be the build of ${LIBNAME} directory")
@@ -140,13 +121,22 @@ set(${LIBNAME}_INCLUDES)
 ##if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/modules)
 ##endif()
 
+target_include_directories(${LIBNAME} PUBLIC
+#  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:modules>
+)
 
+#[[
 target_include_directories(${LIBNAME} PUBLIC 
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
   $<INSTALL_INTERFACE:include>
   $<INSTALL_INTERFACE:modules>
 )
+]]
 
 # this tells the build to place mod files into the ${CMAKE_BINARY_DIR}/modules directory
 #set_target_properties(${LIBNAME} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
@@ -204,6 +194,7 @@ install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.inc")
 
 foreach (DIR ${${LIBNAME}_SRC_DIRS})
     install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING PATTERN "*.f90")
+    install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING PATTERN "*.c")
 endforeach()
 
 #install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/" DESTINATION modules FILES_MATCHING PATTERN "*.mod")

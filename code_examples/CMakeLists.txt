@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 3.18)
+#cmake_minimum_required(VERSION 3.18)
 
-project(BMADPROJ)
+#project(BMADPROJ)
 
 set(EXECUTABLE_NAME )
+
+message(STATUS "Now in file code_examples/CMakeLists.txt")
 
 if("${CONDA_BUILD}" STREQUAL "ON")
     set(INC_DIRS
@@ -14,9 +16,7 @@ else()
     )
 endif()
 
-#include_directories(${BMAD_EXTERNAL} ${INC_DIRS})
-
-enable_language( Fortran )
+#enable_language( Fortran )
 
 set(PROGRAM_LIST
     spin_amplitude_dependent_tune
@@ -48,7 +48,9 @@ if("${ENABLE_OPENMP}" STREQUAL "ON" AND "${ENABLE_MPI}" STREQUAL "ON")
     list(APPEND PROGRAM_LIST ${MPI_LIST})
 endif()
 
-foreach(PROG ${PROGRAM_LIST})
+if (BUILD_TEST)
+  foreach(PROG ${PROGRAM_LIST})
     message(STATUS "Now building ${PROG}")
     add_subdirectory(${PROG})
-endforeach()
+  endforeach()
+endif()

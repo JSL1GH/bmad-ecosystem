@@ -35,6 +35,8 @@ set(_bmad_components "${BMAD_ECOSYSTEM_FIND_COMPONENTS}")
 # Component closure: higher-level components imply lower ones
 # ------------------------------------------------------------
 if("tao" IN_LIST _bmad_components)
+  # tao links bmad + sim_utils, so their dependency logic will run
+  # If tao has additional external deps, add them here.
   list(APPEND _bmad_components bmad sim_utils forest)
 endif()
 
@@ -47,9 +49,25 @@ if("sim_utils" IN_LIST _bmad_components)
   list(APPEND _bmad_components forest)
 endif()
 
+if("cpp_bmad_interface" IN_LIST _bmad_components)
+  list(APPEND _bmad_components bmad sim_utils forest)
+endif()
+
+if("bsim" IN_LIST _bmad_components)
+  list(APPEND _bmad_components bmad sim_utils forest)
+endif()
+
+if("lux" IN_LIST _bmad_components)
+  list(APPEND _bmad_components bmad sim_utils forest)
+endif()
+
 list(REMOVE_DUPLICATES _bmad_components)
 
-
+#JSL night - 1/11/26
+#  set(_need_sim_utils_deps FALSE)
+#  if("sim_utils" IN_LIST _bmad_components OR "bmad" IN_LIST _bmad_components OR "tao" IN_LIST _bmad_components)
+#    set(_need_sim_utils_deps TRUE)
+# endif()
 
   # sim_utils uses FGSL (and FGSL handles GSL version policy internally)
   if("sim_utils" IN_LIST _bmad_components)
@@ -76,6 +94,7 @@ list(REMOVE_DUPLICATES _bmad_components)
     find_dependency(XRAYLIB)
   endif()
 
+
 #  if("bmad" IN_LIST _bmad_components)
 #    find_dependency(LAPACK95)
 #  endif()
@@ -85,6 +104,14 @@ list(REMOVE_DUPLICATES _bmad_components)
   # endif()
 
 endif()
+
+#JSL night - 1/11/26
+#if(_need_sim_utils_deps)
+#  find_dependency(FGSL)
+#  find_dependency(FFTW3)     # NOT CONFIG (uses your FindFFTW3.cmake)
+#  find_dependency(LAPACK95)
+#  find_dependency(plplot CONFIG)  # if sim_utils really needs it
+#endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/BMAD_ECOSYSTEMTargets.cmake")
 

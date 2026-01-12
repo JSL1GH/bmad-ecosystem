@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 3.18)
+#cmake_minimum_required(VERSION 3.18)
 
-project(BMADPROJ)
+#project(BMADPROJ)
 
 set(EXECUTABLE_NAME )
+
+message(STATUS "Now in file util_programs/CMakeLists.txt")
 
 if("${CONDA_BUILD}" STREQUAL "ON")
     set(INC_DIRS
@@ -16,7 +18,7 @@ endif()
 
 #include_directories(${BMAD_EXTERNAL} ${INC_DIRS})
 
-enable_language( Fortran )
+#enable_language( Fortran )
 
 set(PROGRAM_LIST
     beam_file_translate_format

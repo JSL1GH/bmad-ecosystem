@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.18)
+#cmake_minimum_required(VERSION 3.18)
 
-project(BMADPROJ)
+#project(BMAD_ECOSYSTEM)
 
 set(LIBNAME cpp_bmad_interface)
 
@@ -18,7 +18,7 @@ endif()
 
 #include_directories(${BMAD_EXTERNAL} ${INC_DIRS})
 
-enable_language( Fortran )
+#enable_language( Fortran )
 
 #clear ${LIBNAME}_SRC_FILES
 set(${LIBNAME}_SRC_FILES)
@@ -56,8 +56,26 @@ message(STATUS "1. Working on ${LIBNAME}")
 add_library(${LIBNAME} ${${LIBNAME}_SRC_FILES})
 add_library(BMAD_ECOSYSTEM::${LIBNAME} ALIAS ${LIBNAME})
 
-target_link_libraries(${LIBNAME} ${DEP_LIBS} BMAD_ECOSYSTEM::sim_utils)
+#target_link_libraries(${LIBNAME} PUBLIC BMAD_ECOSYSTEM::sim_utils PRIVATE ${DEP_LIBS})
+target_link_libraries(${LIBNAME} PUBLIC BMAD_ECOSYSTEM::bmad PRIVATE ${DEP_LIBS})
 
+#[[
+target_include_directories(${LIBNAME} PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:modules>
+)
+]]
+
+target_include_directories(${LIBNAME} PUBLIC
+#  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:modules>
+)
 message(DEBUG "This will be the build of ${LIBNAME} directory")
 
 #NEXT IS BETTER set_target_properties(${LIBNAME} PROPERTIES Fortran_MODULE_DIRECTORY modules)
@@ -65,14 +83,17 @@ set_target_properties(${LIBNAME} PROPERTIES
     Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules"
 )
 
-message(STATUS "Our value of CMAKE_CURRENT_BINARY_DIR is ${CMAKE_CURRENT_BINARY_DIR}")
+#message(STATUS "Our value of CMAKE_CURRENT_BINARY_DIR is ${CMAKE_CURRENT_BINARY_DIR}")
+
+# get the include files into our build area
+file(GLOB INC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.inc")
 
 file(COPY ${INC_FILES}
      DESTINATION "${CMAKE_BINARY_DIR}/${LIBNAME}/include")
 
 
 # place the targets of this library into the lib directory of the CMAKE_INSTALL_PREFIX area
-install(TARGETS ${LIBNAME} LIBRARY DESTINATION lib)
+#install(TARGETS ${LIBNAME} LIBRARY DESTINATION lib)
 
 #install(TARGETS ${LIBNAME} EXPORT ${LIBNAME}Targets)
 install(TARGETS ${LIBNAME}
@@ -80,9 +101,11 @@ install(TARGETS ${LIBNAME}
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
 )
 
 install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.inc")
+install(DIRECTORY code DESTINATION src/${LIBNAME} FILES_MATCHING PATTERN "*.f90")
 
 foreach (DIR ${${LIBNAME}_SRC_DIRS})
     install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING PATTERN "*.f90")
@@ -96,4 +119,6 @@ install(
 
 
 # now build library associated programs
-add_subdirectory(cpp_bmad_interface_test)
+if(BUILD_TEST)
+  add_subdirectory(cpp_bmad_interface_test)
+endif()

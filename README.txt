@@ -70,3 +70,21 @@ Some additional build information can be found by using the --verbose switch (--
 
 
 #cmake -DDEFAULT_BMAD_EXTERNAL=ON -DCESR_PLPLOT=ON -DCUSER_FORCE=true -DCMAKE_INSTALL_PREFIX:PATH=/home/cfsd/laster/bmad/internal -LH ..
+
+
+
+FYI:
+IF want to build a single subdirectory (and it's dependencies)
+
+1.
+
+  cmake -S . -B build   # once
+
+2.
+
+  cmake --build build --target cpp_bmad_interface
+
+or
+
+  cd build
+  make cpp_bmad_interface
