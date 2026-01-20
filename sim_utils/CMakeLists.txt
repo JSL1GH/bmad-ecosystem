@@ -1,200 +1,214 @@
-#cmake_minimum_required(VERSION 3.18)
+# sim_utils/CMakeLists.txt
 
 set(LIBNAME sim_utils)
-
-#project(BMADPROJ)
 message(STATUS "Now in file ${LIBNAME}/CMakeLists.txt")
 
-if("${CONDA_BUILD}" STREQUAL "ON")
-    set(INC_DIRS
-        ${CONDA_BUILD_PATH}/include/
-        ${CONDA_BUILD_PATH}/include/fgsl/
-    )
-else()
-    set(INC_DIRS
-    )
-endif()
-
-#include_directories(${BMAD_EXTERNAL} ${INC_DIRS})
-
-#enable_language( Fortran )
-
-#clear ${LIBNAME}_SRC_FILES
+# ------------------------------------------------------------
+# Sources
+# ------------------------------------------------------------
 set(${LIBNAME}_SRC_FILES)
-
-#clear ${LIBNAME}_SRC_DIRS
-set(${LIBNAME}_SRC_DIRS)
-
-# list of directories that contain files that need to be "built"
 set(${LIBNAME}_SRC_DIRS
-    file 
-    interfaces 
-    io 
-    math 
-    matrix 
-    misc
-    optimizers
-    plot 
-    string
-    geodesic_lm
-    special_functions
+  file
+  interfaces
+  io
+  math
+  matrix
+  misc
+  optimizers
+  plot
+  string
+  geodesic_lm
+  special_functions
 )
 
-message(DEBUG "BUILDING LIST OF SRCS FROM ${LIBNAME} ${BASEDIR} ${${LIBNAME}_SRC_DIRS}")
-
-# loop through the directories and add any files that will be built to the ${NEXT_DIR_FILES} variable
-# at the end of discovering all of the files in a directory, we build the ${SRC_FILES} variable
 foreach(DIR ${${LIBNAME}_SRC_DIRS})
-    message(DEBUG "Looking at ${BASEDIR}/${LIBNAME}/${DIR}/*.f90")
-    file( GLOB NEXT_DIR_FILES
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.f
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.f90
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.c
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.cc
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.CC
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.cpp
-        ${BASEDIR}/${LIBNAME}/${DIR}/*.cxx
-    )
-    list(APPEND ${LIBNAME}_SRC_FILES ${NEXT_DIR_FILES})
+  file(GLOB NEXT_DIR_FILES
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.f
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.f90
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.c
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.cc
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.CC
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.cpp
+    ${BASEDIR}/${LIBNAME}/${DIR}/*.cxx
+  )
+  list(APPEND ${LIBNAME}_SRC_FILES ${NEXT_DIR_FILES})
 endforeach()
 
-message(DEBUG "Value of ${LIBNAME}_SRC_FILES is - ${${LIBNAME}_SRC_FILES}")
-message(STATUS "JSL - Value of ${LIBNAME}_SRC_FILES is - ${${LIBNAME}_SRC_FILES}")
-
-message(DEBUG "THIS makes the library - ${LIBNAME} - from the .f90 files - list is ${${LIBNAME}_SRC_FILES}}")
 message(STATUS "1. Working on ${LIBNAME}")
-
-# this does the actual build of the library - done at 'make' time, not at cmake time!
-# places the ${LIBNAME}.so file in the build directory/${LIBNAME}/lib${LIBNAME}.so
 add_library(${LIBNAME} ${${LIBNAME}_SRC_FILES})
 add_library(BMAD_ECOSYSTEM::${LIBNAME} ALIAS ${LIBNAME})
 
+# ------------------------------------------------------------
+# Dependencies (targets)
+# ------------------------------------------------------------
 find_package(plplot CONFIG REQUIRED)
 message(STATUS "sim_utils: plplot_DIR='${plplot_DIR}', plplot_FOUND='${plplot_FOUND}'")
-
-
 
 find_package(FGSL REQUIRED)
 find_package(FFTW3 REQUIRED MODULE)
 find_package(LAPACK95 REQUIRED)
 
-set(${LIBNAME}_DEP_LIBS FGSL::fgsl ${gsl_LIBRARIES} FFTW3::fftw3 LAPACK95::lapack95)
+# Prefer the real imported targets (avoid raw ${gsl_LIBRARIES} if possible)
+# FGSL::fgsl already pulls GSL::gsl if your FindFGSL.cmake created it.
+set(${LIBNAME}_DEP_LIBS
+  FGSL::fgsl
+  FFTW3::fftw3
+  LAPACK95::lapack95
+  PLPLOT::plplotfortran
+)
 
-message(STATUS "OUR DEP_LIBS FOR sim_utils is ${LIBNAME}_DEP_LIBS - ${${LIBNAME}_DEP_LIBS}")
+# X11 is only meaningful on Apple if your PLplot build needs it; if your top-level
+# already did find_package(X11 REQUIRED) you can rely on X11_LIBRARIES being set.
+# If not, this stays harmless.
+if(APPLE AND DEFINED X11_LIBRARIES)
+  list(APPEND ${LIBNAME}_DEP_LIBS ${X11_LIBRARIES})
+endif()
 
-#    target_include_directories(${DIR} PRIVATE ${X11_INCLUDE_DIR})
-#   target_link_libraries(${DIR} PRIVATE ${X11_LIBRARIES})
-if (APPLE)
-  target_link_libraries(${LIBNAME}
-    PUBLIC
-      ${${LIBNAME}_DEP_LIBS}
-#      PLPLOT::plplot
-      PLPLOT::plplotfortran
-      readline
-      ${X11_LIBRARIES}
-  )
-else()
-#    target_link_libraries(${LIBNAME} PUBLIC ${${LIBNAME}_DEP_LIBS} readline)
-#    target_link_libraries(${LIBNAME} PUBLIC ${${LIBNAME}_DEP_LIBS} PLPLOT::plplot
-#    PLPLOT::plplotfortran readline ${X11_LIBRARIES})
-  target_link_libraries(${LIBNAME}
-    PUBLIC
-      ${${LIBNAME}_DEP_LIBS}
-      PLPLOT::plplotfortran
-      readline
-      ${X11_LIBRARIES}
+target_link_libraries(${LIBNAME} PUBLIC ${${LIBNAME}_DEP_LIBS})
+
+# ------------------------------------------------------------
+# Fortran module + include propagation
+# ------------------------------------------------------------
+set_target_properties(${LIBNAME} PROPERTIES
+  Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules"
+)
+
+# Only add source include dir if it exists (avoids -Wmissing-include-dirs)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  target_include_directories(${LIBNAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
   )
 endif()
 
-message(DEBUG "This will be the build of ${LIBNAME} directory")
-
-# this is where to find the include and modules files needed for our build of ${LIBNAME}
-#target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/include ${CMAKE_BINARY_DIR}/modules)
-
-set(${LIBNAME}_INCLUDES)
-
-#if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/include)
-#    set(${LIBNAME}_INCLUDES $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-#endif()
-##if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/include)
-##endif()
-##if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/modules)
-##endif()
-
+# Always expose the module directory to dependents
 target_include_directories(${LIBNAME} PUBLIC
-#  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
   $<INSTALL_INTERFACE:modules>
 )
 
-#[[
-target_include_directories(${LIBNAME} PUBLIC 
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
-  $<INSTALL_INTERFACE:include>
-  $<INSTALL_INTERFACE:modules>
+# ------------------------------------------------------------
+# Readline / history (append_history) support
+#   - works with Homebrew, MacPorts, Conda, or system
+#   - defines HAVE_APPEND_HISTORY as 0/1 *once* for this target
+# ------------------------------------------------------------
+# We do NOT use include_directories()/link_directories() here.
+# Everything is target-based.
+
+set(_READLINE_HINTS "")
+if(DEFINED BMAD_EXTERNAL AND NOT BMAD_EXTERNAL STREQUAL "")
+  list(APPEND _READLINE_HINTS "${BMAD_EXTERNAL}")
+endif()
+
+if("${CONDA_BUILD}" STREQUAL "ON" AND DEFINED CONDA_BUILD_PATH AND NOT CONDA_BUILD_PATH STREQUAL "")
+  list(APPEND _READLINE_HINTS "${CONDA_BUILD_PATH}")
+elseif(DEFINED ENV{CONDA_PREFIX} AND NOT "$ENV{CONDA_PREFIX}" STREQUAL "")
+  list(APPEND _READLINE_HINTS "$ENV{CONDA_PREFIX}")
+endif()
+
+if(APPLE)
+  # Homebrew + Intel brew + MacPorts prefixes
+  list(APPEND _READLINE_HINTS "/opt/homebrew/opt/readline" "/usr/local/opt/readline" "/opt/local")
+endif()
+
+# Header: we specifically want readline/history.h if present (declares append_history)
+find_path(READLINE_INCLUDE_DIR
+  NAMES readline/history.h
+  HINTS ${_READLINE_HINTS}
+  PATH_SUFFIXES include
 )
-]]
 
-# this tells the build to place mod files into the ${CMAKE_BINARY_DIR}/modules directory
-#set_target_properties(${LIBNAME} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
-
-#JSL - set_target_properties(${LIBNAME} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
-#maybe this is issue - set_target_properties(${LIBNAME} PROPERTIES Fortran_MODULE_DIRECTORY modules)
-
-# this is how the library files get into the /lib and /bin directories
-#set_target_properties(${LIBNAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
-set_target_properties(${LIBNAME} PROPERTIES
-    Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules"
+# Library: GNU readline
+find_library(READLINE_LIBRARY
+  NAMES readline
+  HINTS ${_READLINE_HINTS}
+  PATH_SUFFIXES lib
 )
 
-# Make sim_utils module directory visible to dependents at build time
-#target_include_directories(sim_utils PUBLIC
-#  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
-#  $<INSTALL_INTERFACE:modules>
-#)
+# Optional separate history library (more common on Linux)
+find_library(HISTORY_LIBRARY
+  NAMES history
+  HINTS ${_READLINE_HINTS}
+  PATH_SUFFIXES lib
+)
 
-#FOR VERIFICATION PURPOSES
-#get_target_property(_sim_utils_links sim_utils LINK_LIBRARIES)
-#message(STATUS "sim_utils LINK_LIBRARIES=${_sim_utils_links}")
+# Optional curses dependency on Linux
+set(NCURSES_LIBRARY "")
+if(NOT APPLE)
+  find_library(NCURSES_LIBRARY NAMES ncurses curses)
+endif()
 
-#necessary for install
-#install(TARGETS ${LIBNAME} PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include"
-#)
+# If we have a candidate, attach it and test append_history.
+# If we cannot find it, we degrade gracefully and compile without append_history.
+if(READLINE_INCLUDE_DIR AND READLINE_LIBRARY)
+  target_include_directories(${LIBNAME} PRIVATE "${READLINE_INCLUDE_DIR}")
+  target_link_libraries(${LIBNAME} PRIVATE "${READLINE_LIBRARY}")
+  if(HISTORY_LIBRARY)
+    target_link_libraries(${LIBNAME} PRIVATE "${HISTORY_LIBRARY}")
+  endif()
+  if(NCURSES_LIBRARY)
+    target_link_libraries(${LIBNAME} PRIVATE "${NCURSES_LIBRARY}")
+  endif()
 
-#install(TARGETS ${LIBNAME} EXPORT ${LIBNAME}Targets)
-#install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.inc")
-##install(DIRECTORY code DESTINATION src/${LIBNAME} FILESx2_MATCHING PATTERN "*.f90")
-#install(DIRECTORY code DESTINATION src/forest${LIBNAME} FILES_MATCHING PATTERN "*.f90")
-#install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/" DESTINATION modules FILES_MATCHING PATTERN "*.mod")
+  include(CheckSymbolExists)
+  set(CMAKE_REQUIRED_INCLUDES "${READLINE_INCLUDE_DIR}")
+  set(CMAKE_REQUIRED_LIBRARIES "${READLINE_LIBRARY}")
+  if(HISTORY_LIBRARY)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "${HISTORY_LIBRARY}")
+  endif()
+  if(NCURSES_LIBRARY)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "${NCURSES_LIBRARY}")
+  endif()
 
-message(STATUS "Our value of CMAKE_CURRENT_BINARY_DIR is ${CMAKE_CURRENT_BINARY_DIR}")
+  check_symbol_exists(append_history "readline/history.h" HAVE_APPEND_HISTORY)
 
-# get the include files into our build area
-#if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    file(GLOB INC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.inc")
-#endif()
+  if(HAVE_APPEND_HISTORY)
+    target_compile_definitions(${LIBNAME} PRIVATE HAVE_APPEND_HISTORY=1)
+    message(STATUS "sim_utils: append_history available (readline)")
+  else()
+    target_compile_definitions(${LIBNAME} PRIVATE HAVE_APPEND_HISTORY=0)
+    message(STATUS "sim_utils: append_history NOT available -> feature disabled")
+  endif()
 
-file(COPY ${INC_FILES}
-     DESTINATION "${CMAKE_BINARY_DIR}/${LIBNAME}/include")
+  message(STATUS "sim_utils: readline include='${READLINE_INCLUDE_DIR}', lib='${READLINE_LIBRARY}'")
+else()
+  target_compile_definitions(${LIBNAME} PRIVATE HAVE_APPEND_HISTORY=0)
+  message(STATUS "sim_utils: readline not found -> append_history feature disabled")
+endif()
 
-#necessary for install
-install(TARGETS ${LIBNAME} PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
+# ------------------------------------------------------------
+# Install (exported target + includes/modules + source)
+# ------------------------------------------------------------
+# Copy .inc into build tree include (optional)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  file(GLOB INC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.inc")
+  if(INC_FILES)
+    file(COPY ${INC_FILES} DESTINATION "${CMAKE_BINARY_DIR}/${LIBNAME}/include")
+  endif()
+endif()
 
-# place the targets of this library into the lib directory of the CMAKE_INSTALL_PREFIX area
-install(TARGETS ${LIBNAME} LIBRARY DESTINATION lib)
+install(TARGETS ${LIBNAME}
+  EXPORT BMAD_ECOSYSTEMTargets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)
 
-install(TARGETS ${LIBNAME} EXPORT ${LIBNAME}Targets)
-install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.inc")
-#install(DIRECTORY code DESTINATION src/${LIBNAME} FILESx2_MATCHING PATTERN "*.f90")
+# install include .inc files
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN "*.inc")
+endif()
 
+# install modules
+install(
+  DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules/"
+  DESTINATION modules
+)
 
-foreach (DIR ${${LIBNAME}_SRC_DIRS})
+# install sources (your bookkeeping requirement)
+foreach(DIR ${${LIBNAME}_SRC_DIRS})
   install(DIRECTORY ${DIR}/ DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING
-#  install(DIRECTORY code DESTINATION src/${LIBNAME}/${DIR} FILES_MATCHING
     PATTERN "*.f"
     PATTERN "*.f90"
     PATTERN "*.c"
@@ -205,25 +219,5 @@ foreach (DIR ${${LIBNAME}_SRC_DIRS})
   )
 endforeach()
 
-#install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/" DESTINATION modules FILES_MATCHING PATTERN "*.mod")
 
-#install(
-#    DIRECTORY A/
-#    DESTINATION library
-#    FILES_MATCHING
-#    PATTERN "*.f90"
-#)
 
-install(
-    DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules/"
-    DESTINATION modules
-)
-
-# place the targets of this library into the lib directory of the CMAKE_INSTALL_PREFIX area
-install(TARGETS ${LIBNAME}
-        EXPORT BMAD_ECOSYSTEMTargets
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include
-)

@@ -132,7 +132,7 @@ if(DEFINED BMAD_EXTERNAL)
     if ("${BMAD_EXTERNAL}" STREQUAL "")
         message(STATUS "WARNING: NO VALUE PROVIDED FOR BMAD_EXTERNAL - YOU WILL LIKELY ENCOUNTER A BUILD PROBLEM")
     else()
-#        message(DEBUG "Expecting to find bmad external packages at: ${BMAD_EXTERNAL}")
+#        message(DEBUG "Expecting to find bmad external packages at: $gBMAD_EXTERNAL}")
     endif()
 else()
 #    not possible, as we have supplied a value
@@ -143,6 +143,14 @@ set(LIB_POSTFIX ".so")
 if (APPLE)
     set(LIB_POSTFIX ".dylib")
 endif()
+
+# some more special APPLE things - have to tell it where to find our "installed" dylibs - or at least hint!
+# macOS: make installed executables find installed dylibs in <prefix>/lib
+#if(APPLE)
+#  set(CMAKE_MACOSX_RPATH ON)
+#  set(CMAKE_INSTALL_RPATH "@loader_path/../lib")
+#  set(CMAKE_BUILD_WITH_INSTALL_RPATH OFF)
+#endif()
 
 # use our GSL first (external_stack - if it's found, we go with it)
 find_package(GSL QUIET)
@@ -220,7 +228,7 @@ else()
     set(BUILD_TEST "${BUILD_TEST}" CACHE BOOL "Specify if building Bmad with various test executables '-DBUILD_TEST=ON'" FORCE)
 endif()
 
-# Linux/Mac specific testing - for 'deadline'
+# Linux/Mac specific testing - for 'readline'
 include(CheckFunctionExists)
 
 # Make sure we find Homebrew's readline if available
@@ -242,14 +250,15 @@ if(APPLE)
 endif()
 
 # Check if append_history exists in readline/history.h
-set(CMAKE_REQUIRED_LIBRARIES readline)
-check_function_exists(append_history HAVE_APPEND_HISTORY)
+#JSL - set(CMAKE_REQUIRED_LIBRARIES readline)
 
-if(HAVE_APPEND_HISTORY)
-    message(STATUS "append_history() found")
-else()
-    message(STATUS "append_history() NOT found — using fallback behavior")
-endif()
+# JSL - check_function_exists(append_history HAVE_APPEND_HISTORY)
+#JSL
+#if(HAVE_APPEND_HISTORY)
+#    message(STATUS "append_history() found")
+#else()
+#    message(STATUS "append_history() NOT found — using fallback behavior")
+#endif()
 
 if(APPLE)
     set(CMAKE_C_FLAGS "-I/opt/X11/include")
@@ -264,8 +273,67 @@ if(APPLE)
 
 endif()
 
+
 # Make the result available to your source
-add_definitions(-DHAVE_APPEND_HISTORY=${HAVE_APPEND_HISTORY})
+#JSL - add_definitions(-DHAVE_APPEND_HISTORY=${HAVE_APPEND_HISTORY})
+
+
+include(GNUInstallDirs)
+
+
+configure_file(
+  "${CMAKE_SOURCE_DIR}/cmake/bmad-ecosystem-env.sh.in"
+  "${CMAKE_BINARY_DIR}/bmad-ecosystem-env.sh"
+  @ONLY
+)
+
+install(PROGRAMS
+  "${CMAKE_BINARY_DIR}/bmad-ecosystem-env.sh"
+  DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+################
+# for setting if user is binding in RPATH or using a cmake runtime environment file
+
+option(BMAD_ECOSYSTEM_EMBED_EXTERNAL_RPATH
+  "Embed BMAD_EXTERNAL/lib in installed executables' RPATH (makes runtime 'just work' but less relocatable)"
+  OFF
+)
+
+################
+# for setting if user is binding in RPATH or using a cmake runtime environment file
+
+# Internal libdir of this install (e.g. <prefix>/lib)
+set(_BMAD_INTERNAL_LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+
+if(APPLE)
+  set(CMAKE_MACOSX_RPATH ON)
+
+  # Always allow installed executables to find BMAD_ECOSYSTEM libs in <prefix>/lib
+  # Executable is in <prefix>/bin, so this resolves to <prefix>/lib
+  set(_BMAD_INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
+
+  # Optional: also embed BMAD_EXTERNAL/lib
+  if(BMAD_ECOSYSTEM_EMBED_EXTERNAL_RPATH AND DEFINED BMAD_EXTERNAL AND NOT BMAD_EXTERNAL STREQUAL "")
+    list(APPEND _BMAD_INSTALL_RPATH "${BMAD_EXTERNAL}/lib")
+  endif()
+
+  # Apply globally to install tree
+  set(CMAKE_INSTALL_RPATH "${_BMAD_INSTALL_RPATH}")
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+else() # Linux and others
+  # Installed executables should find <prefix>/lib
+  set(_BMAD_INSTALL_RPATH "\$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
+
+  if(BMAD_ECOSYSTEM_EMBED_EXTERNAL_RPATH AND DEFINED BMAD_EXTERNAL AND NOT BMAD_EXTERNAL STREQUAL "")
+    list(APPEND _BMAD_INSTALL_RPATH "${BMAD_EXTERNAL}/lib")
+  endif()
+
+  set(CMAKE_INSTALL_RPATH "${_BMAD_INSTALL_RPATH}")
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif()
+################
 
 message(STATUS "********************************************\n")
 foreach(DIR ${DIRLIST})
@@ -345,7 +413,7 @@ set(BMAD_ECOSYSTEM_INSTALL_CMAKEDIR
 
 message("INSTALL_DIR WILL BE ${BMAD_ECOSYSTEM_INSTALL_CMAKEDIR}")
 
-include(GNUInstallDirs)
+#include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 configure_package_config_file(
@@ -388,3 +456,32 @@ message(STATUS "********************************************")
 
 #GUILLAUME - HSR modeling tools, database, transition
 #
+
+
+
+#[[
+
+Mode 1 — embed external rpath (no activation required)
+
+cmake -S . -B build \
+  -DCMAKE_INSTALL_PREFIX=/.../bmadTryInternal \
+  -DBMAD_EXTERNAL=/.../bmadTryExternal \
+  -DBMAD_ECOSYSTEM_EMBED_EXTERNAL_RPATH=ON
+cmake --build build
+cmake --install build
+
+_____
+
+Mode 2 — don’t embed external rpath (activation script)
+
+cmake -S . -B build \
+  -DCMAKE_INSTALL_PREFIX=/.../bmadTryInternal \
+  -DBMAD_EXTERNAL=/.../bmadTryExternal \
+  -DBMAD_ECOSYSTEM_EMBED_EXTERNAL_RPATH=OFF
+cmake --build build
+cmake --install build
+
+source /.../bmadTryInternal/bin/bmad-ecosystem-env.sh
+/.../bmadTryInternal/bin/tao
+
+]]

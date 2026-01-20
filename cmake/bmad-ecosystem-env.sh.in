@@ -1,0 +1,47 @@
+#!/usr/bin/env sh
+# Source this file:  . /path/to/bmad-ecosystem-env.sh
+# or run in bash/zsh: source /path/to/bmad-ecosystem-env.sh
+
+BMAD_ECOSYSTEM_PREFIX="@CMAKE_INSTALL_PREFIX@"
+BMAD_ECOSYSTEM_LIBDIR="${BMAD_ECOSYSTEM_PREFIX}/@CMAKE_INSTALL_LIBDIR@"
+
+# External prefix (may be empty)
+BMAD_EXTERNAL="@BMAD_EXTERNAL@"
+
+# macOS
+if [ "$(uname)" = "Darwin" ]; then
+  # Put internal libs first
+  if [ -z "${DYLD_LIBRARY_PATH}" ]; then
+    export DYLD_LIBRARY_PATH="${BMAD_ECOSYSTEM_LIBDIR}"
+  else
+    export DYLD_LIBRARY_PATH="${BMAD_ECOSYSTEM_LIBDIR}:${DYLD_LIBRARY_PATH}"
+  fi
+
+  # Optional external libs
+  if [ -n "${BMAD_EXTERNAL}" ] && [ -d "${BMAD_EXTERNAL}/lib" ]; then
+    export DYLD_LIBRARY_PATH="${BMAD_EXTERNAL}/lib:${DYLD_LIBRARY_PATH}"
+  fi
+
+else
+  # Linux
+  if [ -z "${LD_LIBRARY_PATH}" ]; then
+    export LD_LIBRARY_PATH="${BMAD_ECOSYSTEM_LIBDIR}"
+  else
+    export LD_LIBRARY_PATH="${BMAD_ECOSYSTEM_LIBDIR}:${LD_LIBRARY_PATH}"
+  fi
+
+  if [ -n "${BMAD_EXTERNAL}" ] && [ -d "${BMAD_EXTERNAL}/lib" ]; then
+    export LD_LIBRARY_PATH="${BMAD_EXTERNAL}/lib:${LD_LIBRARY_PATH}"
+  fi
+fi
+
+# Optional: help CMake consumers find packages
+if [ -z "${CMAKE_PREFIX_PATH}" ]; then
+  export CMAKE_PREFIX_PATH="${BMAD_ECOSYSTEM_PREFIX}"
+else
+  export CMAKE_PREFIX_PATH="${BMAD_ECOSYSTEM_PREFIX}:${CMAKE_PREFIX_PATH}"
+fi
+
+echo "BMAD_ECOSYSTEM activated:"
+echo "  prefix=${BMAD_ECOSYSTEM_PREFIX}"
+echo "  external=${BMAD_EXTERNAL}"
