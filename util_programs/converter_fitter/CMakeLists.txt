@@ -8,7 +8,16 @@ file(GLOB ${EXECUTABLE_NAME}_SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../converter_
 
 add_executable(${EXECUTABLE_NAME} ${${EXECUTABLE_NAME}_SRC_FILES})
 
-target_link_libraries(${EXECUTABLE_NAME} PRIVATE bsim cpp_bmad_interface tao bmad sim_utils forest gomp readline ${LIST_OF_EXTERNAL_LIBRARIES} stdc++fs X11)
+#target_link_libraries(${EXECUTABLE_NAME} PRIVATE BMAD_ECOSYSTEM::bsim BMAD_ECOSYSTEM::cpp_bmad_interface BMAD_ECOSYSTEM::tao BMAD_ECOSYSTEM::bmad BMAD_ECOSYSTEM::sim_utils BMAD_ECOSYSTEM::forest gomp readline ${LIST_OF_EXTERNAL_LIBRARIES} stdc++fs X11)
+
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE BMAD_ECOSYSTEM::bsim BMAD_ECOSYSTEM::cpp_bmad_interface BMAD_ECOSYSTEM::tao BMAD_ECOSYSTEM::bmad BMAD_ECOSYSTEM::sim_utils BMAD_ECOSYSTEM::forest)
+#target_link_libraries(${EXECUTABLE_NAME} PRIVATE gomp readline ${LIST_OF_EXTERNAL_LIBRARIES} stdc++fs X11)
+
+if (APPLE)
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE readline ${LIST_OF_EXTERNAL_LIBRARIES} X11)
+else()
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE readline ${LIST_OF_EXTERNAL_LIBRARIES} stdc++fs X11)
+endif()
 
 target_include_directories(${EXECUTABLE_NAME} BEFORE PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../converter_element_modeling/fitter)
 
