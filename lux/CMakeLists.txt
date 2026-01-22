@@ -89,8 +89,8 @@ file(COPY ${INC_FILES}
 # place the targets of this library into the lib directory of the CMAKE_INSTALL_PREFIX area
 install(TARGETS ${LIBNAME}
         EXPORT BMAD_ECOSYSTEMTargets
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION bin
         INCLUDES DESTINATION include
 )
