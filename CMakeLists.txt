@@ -7,6 +7,71 @@ cmake_minimum_required(VERSION 3.18)
 #project(BMAD_ECOSYSTEM LANGUAGES CXX Fortran)
 project(BMAD_ECOSYSTEM VERSION 1.0.0 LANGUAGES C CXX Fortran)
 
+# special consideration if on APPLE - to determine if we are using HOMEBREW or MacPorts
+if (APPLE)
+# ---- Detect availability (simple heuristics; tweak if you want stricter checks) ----
+find_program(BREW_EXECUTABLE brew)
+find_program(PORT_EXECUTABLE port)
+
+set(pm_available "")
+if(BREW_EXECUTABLE)
+  message(STATUS "BREW IS AVAILABLE")
+  list(APPEND pm_available homebrew)
+endif()
+if(PORT_EXECUTABLE)
+  message(STATUS "MacPorts IS AVAILABLE")
+  list(APPEND pm_available macports)
+endif()
+
+if(pm_available STREQUAL "")
+  message(FATAL_ERROR "No supported package manager found (need Homebrew 'brew' or MacPorts 'port').")
+endif()
+
+# ---- Read user request (honor -D if present) but keep our working var non-cached ----
+set(_pm_user_provided FALSE)
+
+if(DEFINED CACHE{PACKAGE_MANAGER})
+#  set(PACKAGE_MANAGER "${CACHE{PACKAGE_MANAGER}}")
+  set(PACKAGE_MANAGER "${PACKAGE_MANAGER}")
+  set(_pm_user_provided TRUE)
+elseif(DEFINED PACKAGE_MANAGER) # e.g. set by parent scope/toolchain
+  set(_pm_user_provided TRUE)
+endif()
+
+# ---- Defaulting logic ----
+if(NOT _pm_user_provided OR "${PACKAGE_MANAGER}" STREQUAL "")
+  # Default to macports if available, else first available
+  if("macports" IN_LIST pm_available)
+    set(PACKAGE_MANAGER "macports")
+    message(STATUS "PACKAGE_MANAGER not set; defaulting to 'macports'.")
+  else()
+    list(GET pm_available 0 PACKAGE_MANAGER)
+    message(STATUS "PACKAGE_MANAGER not set; defaulting to '${PACKAGE_MANAGER}' (only available option).")
+  endif()
+else()
+  # ---- Validate request ----
+  set(pm_valid_values macports homebrew)
+  if(NOT "${PACKAGE_MANAGER}" IN_LIST pm_valid_values)
+    message(FATAL_ERROR
+      "Invalid PACKAGE_MANAGER='${PACKAGE_MANAGER}'. Choose: macports or homebrew."
+    )
+  endif()
+  message(STATUS "Values are ${PACKAGE_MANAGER} and ${pm_available}")
+  if(NOT "${PACKAGE_MANAGER}" IN_LIST pm_available)
+    message(FATAL_ERROR
+      "Requested PACKAGE_MANAGER='${PACKAGE_MANAGER}' but it is not available on this system. "
+      "Available: ${pm_available}"
+    )
+  endif()
+
+  message(STATUS "Honoring PACKAGE_MANAGER='${PACKAGE_MANAGER}'.")
+endif()
+
+else()
+  set(PACKAGE_MANAGER "linux")
+  message(STATUS "Using PACKAGE_MANAGER='${PACKAGE_MANAGER}'.")
+endif()
+
 list(PREPEND CMAKE_MODULE_PATH
      "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
