@@ -730,8 +730,8 @@ case ('branch')
     nl=nl+1; write(lines(nl), '(a, i0)') 'For the lattice of universe: ', ix_u
   endif
 
-  nl=nl+1; lines(nl) = '                          N_ele  N_ele   Reference      Default_                      Live                Active'
-  nl=nl+1; lines(nl) = '  Branch                  Track    Max   Particle       Tracking_Species    Geometry  Branch  From_Fork   Fixer'
+  nl=nl+1; lines(nl) = '                          N_ele  N_ele   Reference      Default_                      Live                         Active'
+  nl=nl+1; lines(nl) = '  Branch                  Track    Max   Particle       Tracking_Species    Geometry  Branch  From_Fork            Fixer'
 
 
   fmt = '((i3, 2a), t26, i6, i7, t42, a, t57, a, t77, a, t87, l2, 6x, a, t116, a)'
@@ -831,7 +831,6 @@ case ('chromaticity')
     case default
       call out_io (s_error$, r_name, 'EXTRA STUFF ON LINE: ' // what2)
       return
-
     end select
   enddo
 
@@ -844,23 +843,23 @@ case ('chromaticity')
   endif
 
   tao_lat => tao_pointer_to_tao_lat (u, model$)
-  if (.not. u%calc%one_turn_map) call tao_ptc_normal_form (.true., tao_lat, ix_branch, rf_on = no$)
+  if (.not. u%calc%one_turn_map) call tao_ptc_normal_form (.true., tao_lat, ix_branch)
 
   bmad_nf => tao_branch%bmad_normal_form
   ptc_nf  => tao_branch%ptc_normal_form
 
-  nl=nl+1; lines(nl) = '  Note: Calculation is done with RF off.'
-  nl=nl+1; lines(nl) = '  N     chrom_ptc.a.N     chrom_ptc.b.N'
+  nl=nl+1; lines(nl) = '  N     chrom_ptc.a.N     chrom_ptc.b.N   (Note: 0th order are the tunes)'
 
   do i = 0, ptc_private%taylor_order_ptc-1
     expo = [0, 0, 0, 0, 0, i]
-    z1 =  real(ptc_nf%phase(1) .sub. expo)
-    z2 =  real(ptc_nf%phase(2) .sub. expo)
-    if (i == 0) then
-      nl=nl+1; write (lines(nl), '(i3, 2es18.7, a)') i, z1, z2, '  ! 0th order are the tunes'
+    if (ptc_nf%state%nocavity) then
+      z1 =  real(ptc_nf%phase(1) .sub. expo)
+      z2 =  real(ptc_nf%phase(2) .sub. expo)
     else
-      nl=nl+1; write (lines(nl), '(i3, 2es18.7)') i, z1, z2
+      z1 =  real(ptc_nf%u_phase(1) .sub. expo)
+      z2 =  real(ptc_nf%u_phase(2) .sub. expo)
     endif
+    nl=nl+1; write (lines(nl), '(i3, 2es18.7)') i, z1, z2
   enddo
 
   nl=nl+1; lines(nl) = ''
@@ -868,8 +867,13 @@ case ('chromaticity')
 
   do i = 1, ptc_private%taylor_order_ptc
     expo = [0, 0, 0, 0, 0, i]
-    z1 = -real(ptc_nf%phase(3) .sub. expo) / branch%param%total_length
-    z2 =  real(ptc_nf%path_length .sub. expo) / branch%param%total_length
+    if (ptc_nf%state%nocavity) then
+      z1 = -real(ptc_nf%phase(3) .sub. expo) / branch%param%total_length
+      z2 =  real(ptc_nf%path_length .sub. expo) / branch%param%total_length
+    else
+      z1 = -real(ptc_nf%u_phase(3) .sub. expo) / branch%param%total_length
+      z2 =  real(ptc_nf%u_path_length .sub. expo) / branch%param%total_length
+    endif
     nl=nl+1; write (lines(nl), '(i3, 2x, 2es18.7)') i, z1, z2
   enddo
 
@@ -1107,6 +1111,7 @@ case ('curve')
       value_min = 1e30
       valid = .false.
       do i = 1, n
+        if (.not. allocated(curve(i)%c%x_symb)) cycle
         if (ix_c(i) > size(curve(i)%c%x_symb)) cycle
         value(i) = curve(i)%c%x_symb(ix_c(i))
         valid(i) = .true.
@@ -5850,6 +5855,7 @@ case ('universe')
   nl=nl+1; write(lines(nl), amt) 'Used line(s) in lat file: ', quote(lat%use_name)
   nl=nl+1; write(lines(nl), amt) 'Lattice file name:        ', quote(lat%input_file_name)
   nl=nl+1; write(lines(nl), amt) 'Reference species:        ', species_name(branch%param%particle)
+  nl=nl+1; write(lines(nl), amt) 'Active Fixer:             ', branch%ele(branch%ix_fixer)%name
 
   if (species == ref_particle$ .or. species == anti_ref_particle$) then
     nl=nl+1; write(lines(nl), amt) 'Default tracking species: ', trim(species_name(species)), ' (', trim(species_name(default_tracking_species(branch%param))), ')'

@@ -825,13 +825,14 @@ branch_loop: do i_b = 0, ubound(lat%branch, 1)
       endif
     endif
 
-    ! K0L for a multipole is problematic so disallow
+    ! K0L for a multipole can be problematic
 
     if (ele%key == multipole$ .and. associated(ele%a_pole)) then
-      if (ele%a_pole(0) /= 0) then
+      if (ele%a_pole(0) /= 0 .and. nint(ele%value(k0l_status$)) == not_allowed$) then
         call out_io (s_fatal$, r_name, &
-                  'MULTIPOLE: ' // ele_full_name(ele, '@N (&#)'), &
-                  'CANNOT HAVE A FINITE K0L VALUE. SEE THE BMAD MANUAL FOR DETAILS.')
+                'MULTIPOLE: ' // ele_full_name(ele, '@N (&#)'), &
+                ' CANNOT HAVE A FINITE K0L VALUE UNLESS K0L_STATUS IS SET TO BENDS_REFERENCE OR STRAIGHT_REFERENCE.', &
+                ' SEE THE BMAD MANUAL FOR DETAILS.')
         err_flag = .true.
       endif
     endif
@@ -1335,7 +1336,7 @@ branch_loop: do i_b = 0, ubound(lat%branch, 1)
         ds = s2 - s1
         ds_small = ds_small * max(abs(s1), abs(s2)) 
       else
-        ds = (branch%param%total_length - s1) + s2
+        ds = (slave%branch%param%total_length - s1) + s2
         ds_small = ds_small * max(abs(s1), abs(s2), branch%param%total_length)
       endif 
       l_lord = ele%value(l$) + ele%value(lord_pad2$) + ele%value(lord_pad1$)

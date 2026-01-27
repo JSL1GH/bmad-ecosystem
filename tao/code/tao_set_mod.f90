@@ -588,6 +588,9 @@ if (err) return
 !
 
 select case (who)
+case ('delta_e_chrom')
+  s%com%force_chrom_calc   = .true.
+  s%u%calc%lattice = .true.
 case ('n_threads')
   call tao_set_openmp_n_threads(global%n_threads)
 case ('optimizer')
@@ -3084,7 +3087,9 @@ if (attribute_type(upcase(attribute)) == is_real$ .or. attribute_type(upcase(att
   endif
 
   n_set = 0
-  do i = 1, size(eles)
+  n_eles = size(eles)
+
+  do i = 1, n_eles
     ele => eles(i)%ele
 
     call pointer_to_attribute(ele, attribute, .true., a_ptr, err, err_print_flag = .false.)
@@ -3103,8 +3108,10 @@ if (attribute_type(upcase(attribute)) == is_real$ .or. attribute_type(upcase(att
       enddo
     else
       call set_ele_real_attribute (ele, attribute, set_val(i), err, .false.)
-      if (.not. err) n_set = n_set + 1
-      call tao_set_flags_for_changed_attribute (s%u(eles(i)%id), ele%name, ele, a_ptr)
+      if (.not. err) then
+        n_set = n_set + 1
+        call tao_set_flags_for_changed_attribute (s%u(eles(i)%id), ele%name, ele, a_ptr)
+      endif
     endif
   enddo
 
@@ -3112,6 +3119,11 @@ if (attribute_type(upcase(attribute)) == is_real$ .or. attribute_type(upcase(att
     i = size(eles)
     call set_ele_real_attribute (ele, attribute, set_val(i), err, .true.)
     call out_io (s_error$, r_name, 'NOTHING SET.')
+    return
+
+  elseif (n_eles > 1 .and. n_set /= n_eles) then
+    call out_io (s_info$, r_name, 'Number of elements set: ' // int_str(n_set) // ' out of ' // &
+                                      int_str(n_eles) // ' elements matched to.')
   endif
 
   do i = lbound(s%u, 1), ubound(s%u, 1)
@@ -3184,8 +3196,10 @@ endif
 ! Keeping track of the max err_id will enable the generation of the best error message if there is an error.
 
 n_set = 0
+n_eles = size(eles)
 id_max = 0
-do i = 1, size(eles)
+
+do i = 1, n_eles
   u => s%u(eles(i)%id)
   call set_ele_attribute (eles(i)%ele, trim(attribute) // '=' // trim(val_str), err, .false., lord_set, err_id)
   if (err) then
@@ -3214,6 +3228,10 @@ if (n_set == 0) then
     u => s%u(eles(1)%id)
   endif
   return
+
+elseif (n_eles > 1 .and. n_set /= n_eles) then
+  call out_io (s_info$, r_name, 'Number of elements set: ' // int_str(n_set) // ' out of ' // &
+                                      int_str(n_eles) // ' elements matched to.')
 endif
 
 ! End stuff

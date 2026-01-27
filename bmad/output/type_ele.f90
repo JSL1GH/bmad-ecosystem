@@ -219,6 +219,13 @@ do ia = 1, num_ele_attrib$
   if (is_2nd_column_attribute(ele, a_name, ix2_attrib)) cycle
   if (a_name == 'REF_SPECIES' .and. nint(ele%value(ia)) == not_set$) cycle
 
+  if (a_name == 'K0L_STATUS') then
+    if (nint(ele%value(k0l_status$)) == not_allowed$) cycle
+    nl=nl+1; li(nl) = '!!!!!!!!!!!!!!!!!!!!!!!!!!! type_ele needs to be modified !!!!!!!!!!!!!!!!!!!!!!!!!!!'
+    nl=nl+1; li(nl) = '!!!!!!!!!!!!!!!!!!!!!!!!!!! type_ele needs to be modified !!!!!!!!!!!!!!!!!!!!!!!!!!!'
+    nl=nl+1; li(nl) = '!!!!!!!!!!!!!!!!!!!!!!!!!!! type_ele needs to be modified !!!!!!!!!!!!!!!!!!!!!!!!!!!'
+  endif
+
   attrib2 = ele_attribute_struct()
 
   select case (a_name)
@@ -280,9 +287,11 @@ endif
 ! Multipoles
 
 if (associated(ele%a_pole) .or. associated(ele%a_pole_elec)) then
-  nl=nl+1; write (li(nl), '(5x, a, l1)') 'MULTIPOLES_ON    = ', ele%multipoles_on 
-  nl=nl+1; write (li(nl), '(5x, a, l1, 2x, a)') 'SCALE_MULTIPOLES = ', ele%scale_multipoles, &
-                                    '! Magnet strength scaling? Reference momentum scaling done if FIELD_MASTER = T.'
+  nl=nl+1; write (li(nl), '(5x, a, l1)') 'MULTIPOLES_ON    = ', ele%multipoles_on
+  if (has_attribute(ele, 'SCALE_MULTIPOLES')) then
+    nl=nl+1; write (li(nl), '(5x, a, l1, 2x, a)') 'SCALE_MULTIPOLES = ', ele%scale_multipoles, &
+                                      '! Magnet strength scaling? Reference momentum scaling done if FIELD_MASTER = T.'
+  endif
 endif
 
 a = 0; b = 0; a2 = 0; b2 = 0; knl = 0; tn = 0

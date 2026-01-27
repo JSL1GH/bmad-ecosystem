@@ -525,7 +525,6 @@ logical err_flag, err, changed, saved_is_on, energy_stale, do_track
 
 character(*), parameter :: r_name = 'ele_compute_ref_energy_and_time'
 
-! bmad_com%auto_bookkeeper is set False to prevent track1 calling attribute_bookkeeper 
 ! which will overwrite ele%old_value.
 
 err_flag = .true.
@@ -534,7 +533,6 @@ bmad_com_saved = bmad_com
 bmad_com%radiation_fluctuations_on = .false.
 bmad_com%radiation_damping_on = .false.
 bmad_com%radiation_zero_average = .false.
-bmad_com%auto_bookkeeper = .false.
 
 E_tot_start    = ele0%value(E_tot$)
 p0c_start      = ele0%value(p0c$)
@@ -588,11 +586,8 @@ case (lcavity$, nonconst_ref_energy$)
 
   if ((ele%slave_status == super_slave$ .or. ele%slave_status == slice_slave$) .and. &
                                                ele%tracking_method == bmad_standard$ .and. n > 0) then
-    i0 = ele_rf_step_index(-1.0_rp, ele%s_start - lord%s_start, lord)
-    i1 = ele_rf_step_index(-1.0_rp, ele%s - lord%s_start, lord)
+    ! Note: E_tot and p0c computed by lcavity_rf_step_setup below.
 
-    ele%value(E_tot$) = lord%rf%steps(i1)%E_tot0
-    ele%value(p0c$) = lord%rf%steps(i1)%p0c
   else
     phi = twopi * (lord%value(phi0$) + lord%value(phi0_multipass$))
     e_tot = ele%value(e_tot_start$) + lord%value(gradient$) * ele%value(l$) * cos(phi)
