@@ -2,15 +2,21 @@ cmake_minimum_required(VERSION 3.18)
 
 set(EXECUTABLE_NAME parse_test)
 
+enable_language( Fortran )
+
 message(STATUS "Building ${EXECUTABLE_NAME}")
 
-file(GLOB ${EXECUTABLE_NAME}_SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.f90)
+file(GLOB ${EXECUTABLE_NAME}_SRC_FILES CONFIGURE_DEPENDS
+  ${CMAKE_CURRENT_SOURCE_DIR}/*.f90)
 
 add_executable(${EXECUTABLE_NAME} ${${EXECUTABLE_NAME}_SRC_FILES})
 
-target_link_libraries(${EXECUTABLE_NAME} PRIVATE bsim cpp_bmad_interface tao bmad sim_utils forest gomp readline ${LIST_OF_EXTERNAL_LIBRARIES} X11)
+find_package(BMAD_ECOSYSTEM CONFIG REQUIRED COMPONENTS bmad)
 
-enable_language( Fortran )
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE BMAD_ECOSYSTEM::bmad)
+
+#target_link_libraries(${EXECUTABLE_NAME} PRIVATE bsim cpp_bmad_interface tao bmad sim_utils forest gomp readline ${LIST_OF_EXTERNAL_LIBRARIES} X11)
+
 
 set_target_properties(${EXECUTABLE_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin

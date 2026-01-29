@@ -101,7 +101,7 @@ message(DEBUG "VALUE of build directory is ${CMAKE_BINARY_DIR}")
 #for d in hdf5 fftw lapack lapack95 gsl fgsl forest xraylib sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests
 #set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests)
 #set(DIRLIST forest )#sim_utils) #sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests)
-set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux)
+set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests)
 #set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux)# bsim util_programs lux regression_tests)
 
 option(BUILD_SHARED_LIBS "Specify if do not want shared object libraries (prefer static '.a') '-DBUILD_SHARED_LIBS=OFF'" ON)

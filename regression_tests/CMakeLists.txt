@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(ACC)
+project(BMADPROJ LANGUAGES Fortran)
 
 if("${CONDA_BUILD}" STREQUAL "ON")
     set(INC_DIRS
@@ -14,7 +14,10 @@ endif()
 
 #include_directories(${BMAD_EXTERNAL} ${INC_DIRS})
 
-enable_language( Fortran )
+#enable_language( Fortran )
+
+set(CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -fdollar-ok -Wall -Wextra -ffree-line-length-none -Wunused-variable")
+
 
 set(PROGRAM_LIST
     abs_time_test

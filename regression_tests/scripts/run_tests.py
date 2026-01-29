@@ -45,8 +45,8 @@ Usage:
    run_test.py {-bin <bin_dir>} {-debug} {-test <test_dir>} {-list <test_list_file>}
 Note: Do not use -debug with -bin
 Defaults:
-   <bin_dir>  = "../production/bin" ! Relative to current directory.
-              = "../debug/bin"      ! If -debug switch is present
+   <bin_dir>  = "../BUILD_DIR/bin"   ! Relative to current directory.
+              = "../BUILD_DEBUG/bin" ! If -debug switch is present
    <test_dir> = ""                  ! For running a single test. Overrides test.list list.
    <test_list_file> = "test.list"   ! For running multiple tests.''')
   exit()
@@ -56,7 +56,6 @@ Defaults:
 
 results = open('regression.results', 'w')
 
-#bin_dir = '../production/bin/'
 bin_dir = '../build/bin/'
 test_dir_list = []
 test_list_file = 'TESTS.LIST'
