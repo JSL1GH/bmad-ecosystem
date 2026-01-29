@@ -146,7 +146,7 @@ install(
 )
 
 
-if (BUILD_TEST)
+#if (BUILD_TEST)
 
 # now build library associated programs
 set(PROGRAM_LIST
@@ -190,4 +190,4 @@ foreach(PROG ${PROGRAM_LIST})
     add_subdirectory(${PROG})
 endforeach()
 
-endif()
+#endif()
