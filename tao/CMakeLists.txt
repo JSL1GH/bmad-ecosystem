@@ -76,13 +76,17 @@ target_include_directories(${LIBNAME} PUBLIC
   $<INSTALL_INTERFACE:modules>
 )
 ]]
+
 target_include_directories(${LIBNAME} PUBLIC
-#  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
   $<INSTALL_INTERFACE:modules>
 )
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+endif()
+
 #NEXT IS BETTER set_target_properties(${LIBNAME} PROPERTIES Fortran_MODULE_DIRECTORY modules)
 set_target_properties(${LIBNAME} PROPERTIES
     Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules"

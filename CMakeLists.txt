@@ -279,7 +279,7 @@ message(STATUS "PLOT_TYPE is set to ${PLOT_TYPE}")
 
 
 #Fortran flags needed for building of .f90 files
-set(CMAKE_Fortran_FLAGS  "-DCESR_${PLOT_TYPE}=ON -dM -dI -cpp ${CMAKE_Fortran_FLAGS} -fdollar-ok -Wall -Wextra -ffree-line-length-none -Wunused-variable")
+set(CMAKE_Fortran_FLAGS  "-DCESR_${PLOT_TYPE}=ON -dM -dI -cpp ${CMAKE_Fortran_FLAGS} -fdollar-ok -Wall -Wextra -Wno-tabs -ffree-line-length-none -Wunused-variable")
 
 set(ONE_EXCLUDED 0)
 set(BUILD_LIST)

@@ -62,12 +62,14 @@ add_library(BMAD_ECOSYSTEM::${LIBNAME} ALIAS ${LIBNAME})
 #message(STATUS "VALUE of  ${LIBNAME}_INCLUDES is ${${LIBNAME}_INCLUDES}")
 
 target_include_directories(${LIBNAME} PUBLIC
-#  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
   $<INSTALL_INTERFACE:modules>
 )
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+endif()
 
 message(DEBUG "This will be the build of ${LIBNAME} directory")
 

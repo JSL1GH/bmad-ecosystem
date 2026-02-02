@@ -68,20 +68,15 @@ set_target_properties(${LIBNAME} PROPERTIES
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules"
 )
 
-# Only add source include dir if it exists (avoids -Wmissing-include-dirs)
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include")
-  target_include_directories(${LIBNAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-  )
-endif()
-
-# Always expose the module directory to dependents
 target_include_directories(${LIBNAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+  $<INSTALL_INTERFACE:include>
   $<INSTALL_INTERFACE:modules>
 )
 
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+endif()
 
 #[[
 # ------------------------------------------------------------
