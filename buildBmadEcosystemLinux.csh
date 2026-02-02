@@ -38,11 +38,6 @@ cd bmad-ecosystem
 mkdir build
 cd build
 
-#cmake .. -DCMAKE_INSTALL_PREFIX:PATH=/home/cfsd/laster/bmadTryInternal.31 -DBMAD_EXTERNAL=/home/cfsd/laster/bmadTryExternal.31 -DCMAKE_MODULE_PATH=/home/cfsd/laster/bmadTryExternal.31 -DCMAKE_PREFIX_PATH=/home/cfsd/laster/bmadTryExternal.31 --debug-find
-#cmake .. -DCMAKE_INSTALL_PREFIX:PATH=/home/cfsd/laster/bmadTryInternal.31 -DBMAD_EXTERNAL=/home/cfsd/laster/bmadTryExternal.31 -DCMAKE_PREFIX_PATH=/home/cfsd/laster/bmadTryExternal.31
-
-#cmake .. -DCMAKE_INSTALL_PREFIX:PATH=/home/cfsd/laster/bmadTryInternal.31 -DBMAD_EXTERNAL=/home/cfsd/laster/bmadTryExternal.31 -DCMAKE_PREFIX_PATH=/home/cfsd/laster/bmadTryExternal.31 -DBMAD_ECOSYSTEM_EMBED_EXTERNAL_RPATH=ON
-
 cmake .. -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/bmadTryInternal.${ROLLOUT} -DBMAD_EXTERNAL=${HOME}/bmadTryExternal.${ROLLOUT} -DCMAKE_PREFIX_PATH=${HOME}/bmadTryExternal.${ROLLOUT}
 
 make install
