@@ -47,17 +47,19 @@ message(STATUS "sim_utils: plplot_DIR='${plplot_DIR}', plplot_FOUND='${plplot_FO
 find_package(FGSL REQUIRED)
 find_package(FFTW3 REQUIRED MODULE)
 find_package(LAPACK95 REQUIRED)
+find_package(X11)
 
 set(${LIBNAME}_DEP_LIBS
   FGSL::fgsl
   FFTW3::fftw3
   LAPACK95::lapack95
   PLPLOT::plplotfortran
+  ${X11_X11_LIB}
 )
 
-if(APPLE AND DEFINED X11_LIBRARIES)
-  list(APPEND ${LIBNAME}_DEP_LIBS ${X11_LIBRARIES})
-endif()
+#if(APPLE AND DEFINED X11_LIBRARIES)
+#  list(APPEND ${LIBNAME}_DEP_LIBS ${X11_LIBRARIES})
+#endif()
 
 target_link_libraries(${LIBNAME} PUBLIC ${${LIBNAME}_DEP_LIBS})
 
