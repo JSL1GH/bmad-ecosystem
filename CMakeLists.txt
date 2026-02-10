@@ -24,7 +24,7 @@ if(PORT_EXECUTABLE)
 endif()
 
 if(pm_available STREQUAL "")
-  message(FATAL_ERROR "No supported package manager found (need Homebrew 'brew' or MacPorts 'port').")
+  message(FATAL_ERROR "No supported package manager found (need Homebrew 'homebrew' or MacPorts 'macports').")
 endif()
 
 # ---- Read user request (honor -D if present) but keep our working var non-cached ----
@@ -104,12 +104,16 @@ message(DEBUG "VALUE of build directory is ${CMAKE_BINARY_DIR}")
 set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests)
 #set(DIRLIST forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux)# bsim util_programs lux regression_tests)
 
-option(BUILD_SHARED_LIBS "Specify if do not want shared object libraries (prefer static '.a') '-DBUILD_SHARED_LIBS=OFF'" ON)
-if(NOT DEFINED BUILD_SHARED_LIBS)
-    set(BUILD_SHARED_LIBS ON)
-else()
-    set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+set(BUILD_SHARED_LIBS ON)
+
+option(BUILD_STATIC_LIBS "Specify if do not want shared object libraries (prefer static '.a') '-DBUILD_STATIC_LIBS=ON'" OFF)
+if(DEFINED BUILD_STATIC_LIBS)
+    if("${BUILD_STATIC_LIBS}" STREQUAL "ON")
+        set(BUILD_SHARED_LIBS OFF)
+    endif()
 endif()
+
+message(DEBUG "Value of BUILD_SHARED_LIBS is ${BUILD_SHARED_LIBS}")
 
 option(CONDA_BUILD "Specify if building Bmad with conda '-DCONDA_BUILD=ON'" OFF)
 if(NOT DEFINED CONDA_BUILD)
@@ -120,7 +124,7 @@ else()
 endif()
 
 if("${CONDA_BUILD}" STREQUAL "ON")
-    if(NOT DEFINED ${CONDA_PATH})
+    if(NOT DEFINED CONDA_PATH)
         message(FATAL_ERROR "CONDA_PATH must be specified if CONDA_BUILD is set to ON")
     endif()
     set(CONDA_BUILD_PATH ${CONDA_PATH})
@@ -164,25 +168,25 @@ if(DEFINED CMAKE_INSTALL_PREFIX)
     if(${CMAKE_INSTALL_PREFIX} STREQUAL "/usr/local")
         message(STATUS "User did not set a value (or set a value of '/usr/local)' for CMAKE_INSTALL_PREFIX - defaulting to $ENV{HOME}/bmad/internal")
         set(CMAKE_INSTALL_PREFIX $ENV{HOME}/bmad/internal)
-
-        # now check again to see if the new value we just set - exists
-        if(EXISTS "${CMAKE_INSTALL_PREFIX}")
-            # did user supply force 
-	    if(CUSER_FORCE)
-	        #      message (STATUS "Directory path '${CMAKE_INSTALL_PREFIX}' already exists - user supplied force option! ('-force')")
-	        message(DEBUG "Directory path '${CMAKE_INSTALL_PREFIX}' already exists - user supplied force option! ('-force') - continuing and building into it")
-                option(CMAKE_INSTALL_PREFIX "Specify where Bmad should be installed when run with 'make install' - '-DCMAKE_INSTALL_PREFIX=/full_path/to_my_install_directory'" ${CMAKE_INSTALL_PREFIX})
-
-	    else()
-                message (FATAL_ERROR "Directory path '${CMAKE_INSTALL_PREFIX}' already exists - please modify or supply a build flag to override - in order continue installation ('-DCUSER_FORCE=true)...cancel'")
-            endif()
-        endif()
     else()
-        message(STATUS "User has set a value of ${CMAKE_INSTALL_PREFIX}")
+        message(STATUS "User has set a value for CMAKE_INSTALL_PREFIX = '${CMAKE_INSTALL_PREFIX}'")
     endif()
 else()  
     message(STATUS "No value given for CMAKE_INSTALL_PREFIX - defaulting to $ENV{HOME}/bmad/internal")
     set(CMAKE_INSTALL_PREFIX $ENV{HOME}/bmad/internal)
+endif()
+
+# now check to see if the user will be writing into and/or overwriting a directory that may already exist.
+# if it does, we require the user to indicate they understand this by providing a variable called CUSER_FORCE!
+if(EXISTS "${CMAKE_INSTALL_PREFIX}")
+    # did user supply force 
+    if(CUSER_FORCE)
+        # message (STATUS "Directory path '${CMAKE_INSTALL_PREFIX}' already exists - user supplied force option! ('-force')")
+	message(DEBUG "Directory path '${CMAKE_INSTALL_PREFIX}' already exists - user supplied force option! ('-force') - continuing and building into it")
+        option(CMAKE_INSTALL_PREFIX "Specify where Bmad should be installed when run with 'make install' - '-DCMAKE_INSTALL_PREFIX=/full_path/to_my_install_directory'" ${CMAKE_INSTALL_PREFIX})
+    else()
+        message (FATAL_ERROR "Directory path '${CMAKE_INSTALL_PREFIX}' already exists - please modify or supply a build flag to override - in order continue installation ('-DCUSER_FORCE=true)...cancel'")
+    endif()
 endif()
 
 message(STATUS "Current CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
@@ -379,18 +383,18 @@ if(APPLE)
   set(_BMAD_INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
 
   # Optional: also embed BMAD_EXTERNAL/lib
-#  if(BMAD_ECOSYSTEM_EMBED_EXTERNAL_RPATH AND DEFINED BMAD_EXTERNAL AND NOT BMAD_EXTERNAL STREQUAL "")
-#    list(APPEND _BMAD_INSTALL_RPATH "${BMAD_EXTERNAL}/lib")
-#  endif()
-if(BMAD_ECOSYSTEM_EMBED_EXTERNAL_RPATH AND DEFINED BMAD_EXTERNAL AND NOT BMAD_EXTERNAL STREQUAL "")
-  if(EXISTS "${BMAD_EXTERNAL}/${CMAKE_INSTALL_LIBDIR}")
-    list(APPEND _BMAD_INSTALL_RPATH "${BMAD_EXTERNAL}/${CMAKE_INSTALL_LIBDIR}")
-  elseif(EXISTS "${BMAD_EXTERNAL}/lib")
-    list(APPEND _BMAD_INSTALL_RPATH "${BMAD_EXTERNAL}/lib")
-  elseif(EXISTS "${BMAD_EXTERNAL}/lib64")
-    list(APPEND _BMAD_INSTALL_RPATH "${BMAD_EXTERNAL}/lib64")
+  #  if(BMAD_ECOSYSTEM_EMBED_EXTERNAL_RPATH AND DEFINED BMAD_EXTERNAL AND NOT BMAD_EXTERNAL STREQUAL "")
+  #    list(APPEND _BMAD_INSTALL_RPATH "${BMAD_EXTERNAL}/lib")
+  #  endif()
+  if(BMAD_ECOSYSTEM_EMBED_EXTERNAL_RPATH AND DEFINED BMAD_EXTERNAL AND NOT BMAD_EXTERNAL STREQUAL "")
+    if(EXISTS "${BMAD_EXTERNAL}/${CMAKE_INSTALL_LIBDIR}")
+      list(APPEND _BMAD_INSTALL_RPATH "${BMAD_EXTERNAL}/${CMAKE_INSTALL_LIBDIR}")
+    elseif(EXISTS "${BMAD_EXTERNAL}/lib")
+      list(APPEND _BMAD_INSTALL_RPATH "${BMAD_EXTERNAL}/lib")
+    elseif(EXISTS "${BMAD_EXTERNAL}/lib64")
+      list(APPEND _BMAD_INSTALL_RPATH "${BMAD_EXTERNAL}/lib64")
+    endif()
   endif()
-endif()
 
   # Apply globally to install tree
   set(CMAKE_INSTALL_RPATH "${_BMAD_INSTALL_RPATH}")
@@ -526,11 +530,6 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake/"
 )
 
 message(STATUS "********************************************")
-
-
-#GUILLAUME - HSR modeling tools, database, transition
-#
-
 
 
 #[[
