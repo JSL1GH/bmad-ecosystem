@@ -121,6 +121,12 @@ e.g. CMAKE_INSTALL_PREFIX ----> -DCMAKE_INSTALL_PREFIX=/install/prefix/path
 # through 'sourcing' a supplied script, prior to launching the executable
 -DBMAD_ECOSYSTEM_EMBED_EXTERNAL_RPATH=ON
 
+
+APPLE ONLY switches
+-DPACKAGE_MANAGER=macports (if not specified - will use macports or homebrew, depending on what is available)
+                           (if both available, used macports)
+                           (if specified - honors request if available, otherwise fails)
+
 # - exclude some libraries from being built by default - default is to build all libraries in bmad toolkit
 # possible, as of 1/1/26, forest sim_utils bmad tao cpp_bmad_interface code_examples bsim util_programs lux regression_tests
 # use -DBUILD_... - where ... is the library/directory - in CAPS!
